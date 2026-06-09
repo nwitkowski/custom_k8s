@@ -44,7 +44,9 @@ assert_eq "liveness probe port is 80" "80" "$LIVENESS_PORT"
 echo ""
 echo "Step 3: Readiness Probe + Service"
 envsubst '$STUDENT_NAME' < "$LAB_DIR/readiness-app.yaml" | kubectl apply -f - &>/dev/null
-wait_for_deploy "$NS" readiness-app 90
+# readiness-app stays NotReady by design (the /ready file is created manually in
+# the lab), so don't wait for Available — only its spec is inspected below.
+kubectl rollout status deployment/readiness-app -n "$NS" --timeout=10s &>/dev/null || true
 
 READINESS_PATH=$(kubectl get deployment readiness-app -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}' 2>/dev/null)
 assert_eq "readiness probe path is /ready" "/ready" "$READINESS_PATH"

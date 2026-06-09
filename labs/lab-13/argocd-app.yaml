@@ -1,15 +1,23 @@
+# Declarative equivalent of the `argocd app create demo-$STUDENT_NAME`
+# command from Step 4. In production you'd commit this manifest to Git
+# instead of using the CLI. Apply with:
+#   envsubst < argocd-app.yaml | kubectl apply -f -
 apiVersion: argoproj.io/v1alpha1
 kind: Application
-metadata: { name: cicd-demo-$STUDENT_NAME, namespace: argocd }
+metadata:
+  name: demo-$STUDENT_NAME
+  namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-org/cicd-demo.git
-    targetRevision: main
-    path: k8s
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: master
+    path: guestbook
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: cicd-lab-$STUDENT_NAME
+    namespace: argocd-lab-$STUDENT_NAME
   syncPolicy:
     automated: { prune: true, selfHeal: true }
     syncOptions: [CreateNamespace=true]

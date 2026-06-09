@@ -11,8 +11,10 @@ spec:
       containers:
       - name: app
         image: busybox
-        command: ['sh', '-c', 'echo "Starting app..."; sleep \
-          $((RANDOM % 10 + 5)); echo "ERROR: Out of memory"; exit 137']
+        # Runs briefly, then allocates memory without bound. The container
+        # exceeds its 32Mi limit and the kernel OOM-killer terminates it
+        # (exit 137 / reason=OOMKilled), driving a real CrashLoopBackOff.
+        command: ['sh', '-c', 'echo "Starting app..."; sleep $((RANDOM % 10 + 5)); echo "Allocating memory beyond limit..."; tail /dev/zero']
         resources:
           requests:
             cpu: 10m

@@ -394,8 +394,7 @@ docker push ${ECR}/myapp:${GIT_SHA}</code></pre>
                         </ul>
                     </div>
                 </div>
-                <aside class="notes">Tip: Additional components include Redis (caching), Dex (SSO), ApplicationSet Controller (multi-cluster), and Notifications Controller (alerts).</aside>
-                <aside class="notes">Repo server clones and renders manifests. Application controller compares desired vs actual state and syncs or waits for approval. API server provides UI and access control.</aside>
+                <aside class="notes">Repo server clones and renders manifests. Application controller compares desired vs actual state and syncs or waits for approval. API server provides UI and access control. Tip: Additional components include Redis (caching), Dex (SSO), ApplicationSet Controller (multi-cluster), and Notifications Controller (alerts).</aside>
             </section>
 
             <!-- Slide 13: ArgoCD Application CRD -->
@@ -452,8 +451,7 @@ spec:
                         </ul>
                     </div>
                 </div>
-                <aside class="notes">Tip: Production recommendation — Enable selfHeal always. Enable automated sync only after establishing confidence. Consider manual sync approval for critical workloads.</aside>
-                <aside class="notes">These three policies control reconciliation behavior. Many teams start with self-heal enabled but automated sync disabled, requiring manual sync approval as a safety gate.</aside>
+                <aside class="notes">These three policies control reconciliation behavior. Many teams start with self-heal enabled but automated sync disabled, requiring manual sync approval as a safety gate. Tip: Production recommendation — Enable selfHeal always. Enable automated sync only after establishing confidence. Consider manual sync approval for critical workloads.</aside>
             </section>
 
             <!-- Slide 15: Multi-Environment Management -->
@@ -816,7 +814,6 @@ spec:
                         </ul>
                     </div>
                 </div>
-                <aside class="notes">Tip: Kaniko builds container images inside Kubernetes without requiring Docker daemon access.</aside>
                 <aside class="notes">Tekton runs CI pipelines as Pods inside Kubernetes. Kaniko builds images without the Docker daemon. Jenkins X wraps Tekton with higher-level automation and environment promotion.</aside>
             </section>
 
@@ -855,8 +852,7 @@ snyk container monitor \
   myapp:v1.2.3 --org=mycompany</code></pre>
                     </div>
                 </div>
-                <aside class="notes">Tip: Never deploy unscanned images. Integrate scanning as a mandatory pipeline gate, not an optional step.</aside>
-                <aside class="notes">Image scanning is a non-negotiable CI gate. Trivy covers OS packages, language deps, and IaC misconfigurations. Snyk offers deeper analysis and automated fix PRs. --ignore-unfixed avoids blocking on unpatched CVEs.</aside>
+                <aside class="notes">Image scanning is a non-negotiable CI gate. Trivy covers OS packages, language deps, and IaC misconfigurations. Snyk offers deeper analysis and automated fix PRs. --ignore-unfixed avoids blocking on unpatched CVEs. Tip: Never deploy unscanned images. Integrate scanning as a mandatory pipeline gate, not an optional step.</aside>
             </section>
 
             <!-- Slide 24: Policy as Code -->
@@ -953,8 +949,8 @@ spec:
                             <li class="fragment">Safe to commit to Git</li>
                         </ul>
                         <pre><code class="language-bash">kubeseal --format yaml \
-  < secret.yaml \
-  > sealed-secret.yaml</code></pre>
+  &lt; secret.yaml \
+  &gt; sealed-secret.yaml</code></pre>
                     </div>
                     <div class="card">
                         <h4>External Secrets Operator</h4>

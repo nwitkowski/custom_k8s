@@ -38,8 +38,7 @@ kubectl config set-context --current --namespace=default
 kubectl create namespace deploy-lab-$STUDENT_NAME
 
 kubectl create configmap app-v1-page \
-  --from-literal=index.html='<h1 \
-    style="color:blue">Application v1</h1><p>Version: 1.0.0</p>' \
+  --from-literal=index.html='<h1 style="color:blue">Application v1</h1><p>Version: 1.0.0</p>' \
   -n deploy-lab-$STUDENT_NAME
 ```
 
@@ -73,8 +72,7 @@ kubectl run curl-test --image=curlimages/curl --rm -it --restart=Never \
 
 ```bash
 kubectl create configmap app-v2-page \
-  --from-literal=index.html='<h1 \
-    style="color:green">Application v2</h1><p>Version: 2.0.0</p>' \
+  --from-literal=index.html='<h1 style="color:green">Application v2</h1><p>Version: 2.0.0</p>' \
   -n deploy-lab-$STUDENT_NAME
 
 kubectl set image deployment/webapp nginx=nginx:1.25 \

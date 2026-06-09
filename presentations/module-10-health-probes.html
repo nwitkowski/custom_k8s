@@ -425,7 +425,7 @@
         - /bin/sh
         - -c
         - |
-          test -f /tmp/healthy &&
+          test -f /tmp/healthy &amp;&amp;
           find /tmp/healthy -mmin -1 | grep -q healthy
       initialDelaySeconds: 10
       periodSeconds: 15

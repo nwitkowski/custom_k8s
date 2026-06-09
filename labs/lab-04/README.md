@@ -87,7 +87,7 @@ kubectl exec $FRONTEND_POD -n lab04-$STUDENT_NAME -- nslookup backend-svc
 kubectl exec $FRONTEND_POD -n lab04-$STUDENT_NAME -- curl -s backend-svc/ip
 ```
 
-> ✅ **Checkpoint:** `nslookup` resolves `backend-svc` to its ClusterIP. Run `curl` multiple times to see different backend pods responding.
+> ✅ **Checkpoint:** `nslookup` resolves `backend-svc` to its ClusterIP, and `curl` returns a JSON response from a backend pod. (The `/ip` endpoint reports the caller's source IP, so it stays the same across requests — the Service still load-balances each new connection across the backend pods behind that single ClusterIP.)
 
 ---
 
@@ -105,7 +105,7 @@ DNS resolution formats:
 | Format | Example |
 |--------|---------|
 | Short name (same namespace) | `backend-svc` |
-| Cross-namespace | `backend-svc.lab04-$STUDENT_NAME` |
+| Namespace-qualified | `backend-svc.lab04-$STUDENT_NAME` |
 | FQDN | `backend-svc.lab04-$STUDENT_NAME.svc.cluster.local` |
 
 > ✅ **Checkpoint:** The `resolv.conf` should show search domains including your namespace.

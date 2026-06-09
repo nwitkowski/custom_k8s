@@ -236,7 +236,8 @@ ArgoCD refuses to roll back an app while automated sync is enabled (it would imm
 argocd app set demo-$STUDENT_NAME --sync-policy none
 
 argocd app history demo-$STUDENT_NAME
-argocd app rollback demo-$STUDENT_NAME 0
+# Roll back to revision 1 (the first entry shown by `app history`)
+argocd app rollback demo-$STUDENT_NAME 1
 
 # Re-enable automated sync with prune and self-heal
 argocd app set demo-$STUDENT_NAME --sync-policy automated --auto-prune --self-heal

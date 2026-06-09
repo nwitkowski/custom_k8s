@@ -250,7 +250,7 @@ Review `prom-rule.yaml` — it defines two alerting rules for pod restart detect
 envsubst '$STUDENT_NAME' < prom-rule.yaml | kubectl apply -f -
 ```
 
-> 💡 The `labels.release` must match the Helm release name for the Prometheus operator to pick up this rule.
+> 💡 The `labels.release` is the conventional way to tag a rule for the kube-prometheus-stack operator. This platform configures the operator to select **all** PrometheusRules (`ruleSelectorNilUsesHelmValues: false`), so the rule is picked up regardless — the label is included as good practice.
 
 ```bash
 kubectl get prometheusrules -n monitoring
@@ -321,7 +321,7 @@ kube_pod_container_status_last_terminated_reason{
 }
 ```
 
-> ✅ **Checkpoint:** Exit code 137 = SIGKILL (typically OOM). The `--previous` flag shows logs from before the crash.
+> ✅ **Checkpoint:** The container exceeds its 32Mi memory limit, so the kubelet records `OOMKilled` as the termination reason with exit code 137 (SIGKILL) — the `OOMKilled` query above returns a data point. The `--previous` flag shows logs from before the crash.
 
 ---
 
@@ -361,7 +361,7 @@ kubectl get pod -l app=traced-app -n obs-lab-$STUDENT_NAME \
 
 ```bash
 pkill -f "port-forward.*8080" 2>/dev/null
-kubectl port-forward -n monitoring svc/monitoring-jaeger-query 8080:16686 &
+kubectl port-forward -n monitoring svc/monitoring-jaeger 8080:16686 &
 ```
 
 > ⚠️ **Cloud9:** Click **Preview → Preview Running Application** to open the Jaeger UI. Select a service from the dropdown to view traces.

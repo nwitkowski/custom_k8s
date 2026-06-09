@@ -22,7 +22,7 @@ spec:
         - name: OTEL_SERVICE_NAME
           value: "traced-app-$STUDENT_NAME"
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://monitoring-jaeger-collector.monitoring.svc.cluster.local:4317"
+          value: "http://monitoring-jaeger.monitoring.svc.cluster.local:4317"
         - name: OTEL_TRACES_SAMPLER
           value: "always_on"
         - name: OTEL_RESOURCE_ATTRIBUTES

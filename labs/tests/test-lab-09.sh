@@ -423,7 +423,10 @@ if kubectl get pods -n monitoring -l app.kubernetes.io/name=jaeger --no-headers 
 
   OTEL_ENDPOINT=$(kubectl get pod -l app=traced-app -n "$NS" \
     -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="OTEL_EXPORTER_OTLP_ENDPOINT")].value}' 2>/dev/null)
-  assert_contains "traced-app OTLP endpoint points to Jaeger" "$OTEL_ENDPOINT" "jaeger"
+  # Assert the exact all-in-one service DNS name. The Jaeger HelmRelease runs
+  # allInOne with collector/query/agent disabled, so the only service is
+  # `monitoring-jaeger` — a `-collector`/`-query` suffix would be wrong.
+  assert_contains "traced-app OTLP endpoint targets the Jaeger all-in-one service" "$OTEL_ENDPOINT" "monitoring-jaeger.monitoring.svc.cluster.local:4317"
 
   OTEL_SAMPLER=$(kubectl get pod -l app=traced-app -n "$NS" \
     -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="OTEL_TRACES_SAMPLER")].value}' 2>/dev/null)

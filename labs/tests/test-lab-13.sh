@@ -12,6 +12,7 @@ source "$SCRIPT_DIR/lib.sh"
 
 export STUDENT_NAME="test-$$"
 NS_CICD="cicd-lab-$STUDENT_NAME"
+NS_ARGOCD="argocd-lab-$STUDENT_NAME"
 NS_FLUX="flux-lab-$STUDENT_NAME"
 echo "=== Lab 13: CI/CD & GitOps (ns: $NS_CICD, $NS_FLUX) ==="
 echo ""
@@ -176,32 +177,32 @@ if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
   envsubst '$STUDENT_NAME' < "$LAB_DIR/argocd-app.yaml" | kubectl apply -f - &>/dev/null 2>&1
   sleep 3
 
-  APP_EXISTS=$(kubectl get application "cicd-demo-$STUDENT_NAME" -n argocd --no-headers 2>/dev/null | wc -l | tr -d ' ')
+  APP_EXISTS=$(kubectl get application "demo-$STUDENT_NAME" -n argocd --no-headers 2>/dev/null | wc -l | tr -d ' ')
   assert_eq "ArgoCD Application created" "1" "$APP_EXISTS"
 
   # Verify Application spec fields
-  APP_DEST_NS=$(kubectl get application "cicd-demo-$STUDENT_NAME" -n argocd \
+  APP_DEST_NS=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
     -o jsonpath='{.spec.destination.namespace}' 2>/dev/null)
-  assert_eq "ArgoCD app targets correct namespace" "$NS_CICD" "$APP_DEST_NS"
+  assert_eq "ArgoCD app targets correct namespace" "$NS_ARGOCD" "$APP_DEST_NS"
 
-  APP_SYNC_POLICY=$(kubectl get application "cicd-demo-$STUDENT_NAME" -n argocd \
+  APP_SYNC_POLICY=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
     -o jsonpath='{.spec.syncPolicy.automated.selfHeal}' 2>/dev/null)
   assert_eq "ArgoCD app has selfHeal enabled" "true" "$APP_SYNC_POLICY"
 
-  APP_PRUNE=$(kubectl get application "cicd-demo-$STUDENT_NAME" -n argocd \
+  APP_PRUNE=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
     -o jsonpath='{.spec.syncPolicy.automated.prune}' 2>/dev/null)
   assert_eq "ArgoCD app has prune enabled" "true" "$APP_PRUNE"
 
   # ArgoCD sync (conditional -- will likely fail due to dummy repo URL)
   if command -v argocd &>/dev/null; then
-    SYNC_RESULT=$(argocd app sync "cicd-demo-$STUDENT_NAME" 2>&1 || true)
+    SYNC_RESULT=$(argocd app sync "demo-$STUDENT_NAME" 2>&1 || true)
     if echo "$SYNC_RESULT" | grep -qi "healthy\|synced\|succeeded"; then
       pass "argocd app sync succeeded"
     else
       skip "argocd app sync expected to fail (dummy repo URL)"
     fi
 
-    HEALTH_RESULT=$(argocd app wait "cicd-demo-$STUDENT_NAME" --health --timeout 10 2>&1 || true)
+    HEALTH_RESULT=$(argocd app wait "demo-$STUDENT_NAME" --health --timeout 10 2>&1 || true)
     if echo "$HEALTH_RESULT" | grep -qi "healthy"; then
       pass "argocd app health check passed"
     else
@@ -211,7 +212,7 @@ if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
 
   # ArgoCD app history and rollback
   if command -v argocd &>/dev/null; then
-    HISTORY_RESULT=$(argocd app history "cicd-demo-$STUDENT_NAME" 2>&1 || true)
+    HISTORY_RESULT=$(argocd app history "demo-$STUDENT_NAME" 2>&1 || true)
     if echo "$HISTORY_RESULT" | grep -qi "ID\|revision\|cicd-demo"; then
       pass "argocd app history returned results"
     else
@@ -220,7 +221,7 @@ if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
 
     # Attempt rollback if sync was performed
     if echo "$SYNC_RESULT" | grep -qi "healthy\|synced\|succeeded"; then
-      ROLLBACK_RESULT=$(argocd app rollback "cicd-demo-$STUDENT_NAME" 1 2>&1 || true)
+      ROLLBACK_RESULT=$(argocd app rollback "demo-$STUDENT_NAME" 1 2>&1 || true)
       if echo "$ROLLBACK_RESULT" | grep -qi "rollback\|healthy\|synced\|succeeded"; then
         pass "argocd app rollback succeeded"
       else
@@ -232,7 +233,7 @@ if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
   fi
 
   # Clean up ArgoCD application
-  kubectl delete application "cicd-demo-$STUDENT_NAME" -n argocd --ignore-not-found &>/dev/null
+  kubectl delete application "demo-$STUDENT_NAME" -n argocd --ignore-not-found &>/dev/null
 else
   skip "argocd not running"
 fi
@@ -392,5 +393,6 @@ fi
 rm -rf "$TMPDIR"
 docker rmi "my-app:$GIT_SHA" "my-app:latest" &>/dev/null 2>&1 || true
 cleanup_ns "$NS_CICD"
+cleanup_ns "$NS_ARGOCD"
 cleanup_ns "$NS_FLUX"
 summary

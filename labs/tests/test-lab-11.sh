@@ -95,7 +95,10 @@ assert_contains "rollout history exists" "$HISTORY" "REVISION"
 echo ""
 echo "Step 4 — Rollback to v1:"
 
-kubectl rollout undo deployment/webapp -n "$NS" &>/dev/null
+# Roll back explicitly to revision 1 (the v1/nginx:1.24 spec). Step 2 made two
+# distinct mutations (set image, then patch the volume), creating two revisions,
+# so a plain `rollout undo` would only revert the last one and land on 1.25.
+kubectl rollout undo deployment/webapp -n "$NS" --to-revision=1 &>/dev/null
 wait_for_deploy "$NS" webapp 90
 
 ROLLBACK_IMAGE=$(kubectl get deployment webapp -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null)

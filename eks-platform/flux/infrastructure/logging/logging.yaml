@@ -15,7 +15,10 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: kube-logging
-      version: ">=4.8.0"
+      # Pinned to 4.x: the Logging CR in flux/platform/platform.yaml uses the
+      # inline `spec.fluentbit` field, which was removed in 5.x+. The chart is
+      # now distributed via OCI only (see the kube-logging HelmRepository).
+      version: ">=4.8.0 <5.0.0"
 # NOTE: the Logging CR (fluentd + fluentbit) is defined once in
 # flux/platform/platform.yaml — do not also install the
 # logging-operator-logging chart, or two Logging resources will conflict.

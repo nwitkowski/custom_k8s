@@ -328,10 +328,17 @@ if kubectl get pods -n flux-system --no-headers 2>/dev/null | grep -q Running; t
     FLUX_HELM_LIST=$(helm list -n "$NS_FLUX" 2>/dev/null)
     assert_contains "helm list shows flux-managed release" "$FLUX_HELM_LIST" "lab-podinfo-$STUDENT_NAME"
 
-    # Verify pods are running
-    FLUX_PODS=$(kubectl get pods -n "$NS_FLUX" \
-      -l "app.kubernetes.io/instance=lab-podinfo-$STUDENT_NAME" \
-      --no-headers 2>/dev/null | grep -c Running || true)
+    # Verify pods are running. A HelmRelease reaching Ready means Helm reported
+    # the release deployed — the podinfo Pods may still be scheduling/pulling,
+    # so wait for them to reach Running before counting (and before drift below).
+    FLUX_PODS=0
+    for i in $(seq 1 24); do
+      FLUX_PODS=$(kubectl get pods -n "$NS_FLUX" \
+        -l "app.kubernetes.io/name=lab-podinfo-$STUDENT_NAME" \
+        --no-headers 2>/dev/null | grep -c Running || true)
+      [ "$FLUX_PODS" -ge 2 ] && break
+      sleep 5
+    done
     if [ "$FLUX_PODS" -ge 2 ]; then
       pass "HelmRelease pods running ($FLUX_PODS replicas)"
     else
@@ -344,12 +351,12 @@ if kubectl get pods -n flux-system --no-headers 2>/dev/null | grep -q Running; t
 
     # Scale manually to create drift
     kubectl scale deployment -n "$NS_FLUX" \
-      -l "app.kubernetes.io/instance=lab-podinfo-$STUDENT_NAME" \
+      -l "app.kubernetes.io/name=lab-podinfo-$STUDENT_NAME" \
       --replicas=5 &>/dev/null
     sleep 3
 
     DRIFT_REPLICAS=$(kubectl get deployment -n "$NS_FLUX" \
-      -l "app.kubernetes.io/instance=lab-podinfo-$STUDENT_NAME" \
+      -l "app.kubernetes.io/name=lab-podinfo-$STUDENT_NAME" \
       -o jsonpath='{.items[0].spec.replicas}' 2>/dev/null)
     assert_eq "manual scale created drift (5 replicas)" "5" "$DRIFT_REPLICAS"
 
@@ -360,7 +367,7 @@ if kubectl get pods -n flux-system --no-headers 2>/dev/null | grep -q Running; t
     REVERTED=false
     for i in $(seq 1 24); do
       CURRENT=$(kubectl get deployment -n "$NS_FLUX" \
-        -l "app.kubernetes.io/instance=lab-podinfo-$STUDENT_NAME" \
+        -l "app.kubernetes.io/name=lab-podinfo-$STUDENT_NAME" \
         -o jsonpath='{.items[0].spec.replicas}' 2>/dev/null)
       if [ "$CURRENT" = "2" ]; then
         REVERTED=true
@@ -373,7 +380,7 @@ if kubectl get pods -n flux-system --no-headers 2>/dev/null | grep -q Running; t
       pass "Flux reverted drift back to 2 replicas"
     else
       FINAL=$(kubectl get deployment -n "$NS_FLUX" \
-        -l "app.kubernetes.io/instance=lab-podinfo-$STUDENT_NAME" \
+        -l "app.kubernetes.io/name=lab-podinfo-$STUDENT_NAME" \
         -o jsonpath='{.items[0].spec.replicas}' 2>/dev/null)
       fail "Flux did not revert drift (replicas: $FINAL, expected: 2)"
     fi

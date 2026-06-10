@@ -119,8 +119,10 @@ if kubectl get pod rbac-test -n "$NS" --no-headers 2>/dev/null | grep -q Running
     fail "rbac-test pod create deployment should be Forbidden"
   fi
 
-  # delete pods should fail
-  EXEC_DELETE=$(kubectl exec rbac-test -n "$NS" -- kubectl delete pod rbac-test -n "$NS" --dry-run=client 2>&1)
+  # delete pods should fail. Use --dry-run=server (NOT client): a client-side
+  # dry-run never contacts the API server, so it bypasses authorization and
+  # would always "succeed", masking RBAC. Server dry-run runs the real authz.
+  EXEC_DELETE=$(kubectl exec rbac-test -n "$NS" -- kubectl delete pod rbac-test -n "$NS" --dry-run=server 2>&1)
   if echo "$EXEC_DELETE" | grep -qi "forbidden\|cannot\|error"; then
     pass "rbac-test pod cannot delete pods (Forbidden)"
   else

@@ -176,8 +176,12 @@ if kubectl get crd gatewayclasses.gateway.networking.k8s.io &>/dev/null; then
     -o jsonpath='{.spec.rules[0].backendRefs[1].weight}' 2>/dev/null)
   assert_eq "HTTPRoute v2 weight is 20" "20" "$W_V2"
 
-  # Clean up cluster-scoped GatewayClass
-  kubectl delete gatewayclass "lab-gateway-class-$STUDENT_NAME" &>/dev/null
+  # Clean up: delete the Gateway first so Envoy Gateway releases the
+  # gateway-exists finalizer on the GatewayClass, otherwise the GatewayClass
+  # delete blocks indefinitely. Timeouts guard against a stuck finalizer.
+  kubectl delete httproute app-route -n "$NS" --ignore-not-found --timeout=60s &>/dev/null
+  kubectl delete gateway lab-gateway -n "$NS" --ignore-not-found --timeout=60s &>/dev/null
+  kubectl delete gatewayclass "lab-gateway-class-$STUDENT_NAME" --ignore-not-found --timeout=60s &>/dev/null
 else
   skip "Gateway API CRD not installed — skipping Gateway tests"
 fi

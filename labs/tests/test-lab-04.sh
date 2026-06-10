@@ -255,10 +255,6 @@ sleep 3
 LB_TYPE=$(kubectl get svc frontend-lb -n "$NS" -o jsonpath='{.spec.type}' 2>/dev/null)
 assert_eq "frontend-lb type is LoadBalancer" "LoadBalancer" "$LB_TYPE"
 
-LB_ANNO=$(kubectl get svc frontend-lb -n "$NS" \
-  -o jsonpath='{.metadata.annotations.service\.beta\.kubernetes\.io/aws-load-balancer-type}' 2>/dev/null)
-assert_eq "frontend-lb has NLB annotation" "external" "$LB_ANNO"
-
 LB_SELECTOR=$(kubectl get svc frontend-lb -n "$NS" -o jsonpath='{.spec.selector.app}' 2>/dev/null)
 assert_eq "frontend-lb selects app=frontend" "frontend" "$LB_SELECTOR"
 

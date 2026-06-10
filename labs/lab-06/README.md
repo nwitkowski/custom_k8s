@@ -242,10 +242,14 @@ kubectl describe networkpolicy restrict-egress -n lab06-$STUDENT_NAME
 ## Step 10: Clean Up
 
 ```bash
-# Clean up cluster-scoped GatewayClass (if created)
-kubectl delete gatewayclass lab-gateway-class-$STUDENT_NAME 2>/dev/null
-
+# Delete the namespace first — this removes the Gateway. The GatewayClass
+# carries a "gateway-exists" finalizer while any Gateway references it, so
+# deleting the namespace first lets the GatewayClass delete complete instead
+# of hanging.
 kubectl delete namespace lab06-$STUDENT_NAME
+
+# Now remove the cluster-scoped GatewayClass (if created)
+kubectl delete gatewayclass lab-gateway-class-$STUDENT_NAME --timeout=60s 2>/dev/null
 
 rm -f tls-ingress.key tls-ingress.crt
 ```

@@ -5,6 +5,12 @@ metadata:
   namespace: flux-lab-$STUDENT_NAME
 spec:
   interval: 15m
+  # Enable drift correction so Flux reverts manual changes (e.g. a kubectl
+  # scale) back to the Helm-rendered state on the next reconcile. Without this,
+  # helm-controller only re-runs on chart/values changes and leaves live drift
+  # in place — Step 9's "Flux reverts replicas to 2" depends on this.
+  driftDetection:
+    mode: enabled
   chart:
     spec:
       chart: podinfo

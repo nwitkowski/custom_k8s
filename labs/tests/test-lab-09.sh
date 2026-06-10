@@ -188,9 +188,23 @@ fi
 EXIT_CODE=$(kubectl get pod -l app=buggy-app -n "$NS" -o jsonpath='{.items[0].status.containerStatuses[0].lastState.terminated.exitCode}' 2>/dev/null)
 assert_eq "buggy-app exit code is 137 (OOMKilled/SIGKILL)" "137" "$EXIT_CODE"
 
-# Check --previous flag retrieves pre-crash logs
-PREV_LOGS=$(kubectl logs -l app=buggy-app -n "$NS" --previous --tail=5 2>/dev/null)
-if echo "$PREV_LOGS" | grep -qE "Starting app|ERROR"; then
+# Check --previous flag retrieves pre-crash logs. Two transient conditions must
+# be tolerated: (1) `--previous` needs a prior instance (restartCount >= 1) —
+# lastState.terminated alone, used for the exit-code check above, is set during
+# the first CrashLoopBackOff before any restart; (2) while the kubelet GCs the
+# dead container, `kubectl logs --previous` intermittently prints "unable to
+# retrieve container logs for containerd://..." to STDOUT (so it's non-empty).
+# Retry until the logs actually contain the expected pre-crash content.
+PREV_OK=false
+for i in $(seq 1 24); do
+  RC=$(kubectl get pod -l app=buggy-app -n "$NS" -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}' 2>/dev/null)
+  if [ "${RC:-0}" -ge 1 ]; then
+    PREV_LOGS=$(kubectl logs -l app=buggy-app -n "$NS" --previous --tail=5 2>/dev/null)
+    if echo "$PREV_LOGS" | grep -qE "Starting app|ERROR"; then PREV_OK=true; break; fi
+  fi
+  sleep 5
+done
+if [ "$PREV_OK" = true ]; then
   pass "kubectl logs --previous retrieves pre-crash logs"
 else
   fail "kubectl logs --previous did not return expected content"
@@ -366,9 +380,11 @@ if kubectl get crd prometheusrules.monitoring.coreos.com &>/dev/null; then
     PF_PID=$!
     sleep 5
 
-    # Wait up to 60s for Prometheus to pick up the rule
+    # Wait up to 120s for Prometheus to pick up the rule (the operator writes
+    # the rules ConfigMap, then prometheus-config-reloader reloads on its own
+    # interval — on a freshly-reconciled cluster this can exceed 60s).
     RULE_FOUND=false
-    for i in $(seq 1 12); do
+    for i in $(seq 1 24); do
       RULES_API=$(curl -s "http://localhost:18082/api/v1/rules" 2>/dev/null)
       if echo "$RULES_API" | jq -e '.data.groups[].rules[] | select(.name == "HighPodRestartCount")' &>/dev/null; then
         RULE_FOUND=true
@@ -380,7 +396,7 @@ if kubectl get crd prometheusrules.monitoring.coreos.com &>/dev/null; then
     if [ "$RULE_FOUND" = true ]; then
       pass "Prometheus rules API contains HighPodRestartCount"
     else
-      fail "HighPodRestartCount not found in Prometheus rules API within 60s"
+      fail "HighPodRestartCount not found in Prometheus rules API within 120s"
     fi
 
     kill $PF_PID &>/dev/null

@@ -172,16 +172,23 @@ assert_eq "PVC web-data-web-2 exists" "web-data-web-2" "$PVC2"
 echo ""
 echo "StatefulSet DNS Resolution:"
 
-DNS_RESULT=$(kubectl run dns-test-$$  --image=busybox:1.36 --rm --restart=Never -n "$NS" \
-  -- nslookup web-0.web-headless."$NS".svc.cluster.local 2>&1) || true
-if echo "$DNS_RESULT" | grep -q "Address"; then
+# Per-pod StatefulSet DNS can lag a few seconds after pods are Ready while the
+# headless EndpointSlice and CoreDNS cache populate — retry before failing.
+DNS_OK=false
+for i in $(seq 1 6); do
+  DNS_RESULT=$(kubectl run dns-test-$$-$i --image=busybox:1.36 --rm -i --restart=Never -n "$NS" \
+    -- nslookup web-0.web-headless."$NS".svc.cluster.local 2>&1) || true
+  if echo "$DNS_RESULT" | grep -q "Address"; then DNS_OK=true; break; fi
+  sleep 5
+done
+if [ "$DNS_OK" = true ]; then
   pass "DNS resolves web-0.web-headless (nslookup)"
 else
   fail "DNS lookup failed for web-0.web-headless"
 fi
 
 # Verify headless service DNS returns pod IPs (not a VIP)
-DNS_HEADLESS=$(kubectl run dns-test2-$$ --image=busybox:1.36 --rm --restart=Never -n "$NS" \
+DNS_HEADLESS=$(kubectl run dns-test2-$$ --image=busybox:1.36 --rm -i --restart=Never -n "$NS" \
   -- nslookup web-headless."$NS".svc.cluster.local 2>&1) || true
 ADDR_COUNT=$(echo "$DNS_HEADLESS" | grep -c "Address" || true)
 if [ "$ADDR_COUNT" -ge 3 ]; then

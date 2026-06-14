@@ -852,17 +852,17 @@ kubectl logs -n kube-system -l k8s-app=kube-proxy --tail=50</code></pre>
                 <h2>&#129489;&#8205;&#128187; Lab 4: Services and Discovery</h2>
                 <h3>Hands-On Exercise</h3>
                 <ul>
-                    <li class="fragment fade-up">Create ClusterIP, NodePort, and LoadBalancer Services</li>
+                    <li class="fragment fade-up">Deploy a multi-tier app and create ClusterIP and NodePort Services</li>
                     <li class="fragment fade-up">Test DNS-based service discovery and examine DNS records</li>
                     <li class="fragment fade-up">Explore Endpoints and EndpointSlices as pods scale</li>
                     <li class="fragment fade-up">Deploy a headless Service and compare DNS responses</li>
-                    <li class="fragment fade-up">Configure a multi-port Service for HTTP and HTTPS</li>
-                    <li class="fragment fade-up">Explore AWS NLB integration with IP-mode targets</li>
+                    <li class="fragment fade-up">Connect the frontend to the backend over Service DNS</li>
+                    <li class="fragment fade-up"><em>Optional:</em> Provision a LoadBalancer Service and verify external access</li>
                 </ul>
                 <div class="highlight-box" style="margin-top: 20px;">
-                    <strong>Duration:</strong> ~45 minutes
+                    <strong>Duration:</strong> ~30 minutes
                 </div>
-                <aside class="notes">Participants create different Service types, verify endpoints, test DNS discovery, work with headless Services, and explore NLB integration. The NLB exercise requires the AWS Load Balancer Controller.</aside>
+                <aside class="notes">Participants deploy a two-tier app, create ClusterIP and NodePort Services, verify Endpoints/EndpointSlices, test DNS discovery, and work with headless Services. The LoadBalancer Service is an optional stretch goal (provisions a billed AWS load balancer).</aside>
             </section>
 
             <!-- Key Takeaways -->

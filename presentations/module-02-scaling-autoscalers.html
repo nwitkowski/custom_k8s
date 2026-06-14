@@ -97,7 +97,7 @@
                     <li class="fragment fade-up">Configure Horizontal Pod Autoscaler (HPA) with the <code>autoscaling/v2</code> API</li>
                     <li class="fragment fade-up">Calculate expected scaling using the HPA algorithm</li>
                     <li class="fragment fade-up">Tune scaling behavior with stabilization windows and policies</li>
-                    <li class="fragment fade-up">Understand VPA concepts and when KEDA is appropriate</li>
+                    <li class="fragment fade-up">Understand VPA and Cluster Autoscaler, and when KEDA is appropriate</li>
                     <li class="fragment fade-up">Monitor scaling with <code>kubectl top</code> and Prometheus</li>
                 </ul>
                 <aside class="notes">HPA is the core of this module. VPA and KEDA are conceptual overviews.</aside>
@@ -290,7 +290,7 @@ containers:
                     <h4>How metrics flow through the system</h4>
                     <ol>
                         <li class="fragment fade-up"><strong>kubelet</strong> collects resource usage from the container runtime (containerd)</li>
-                        <li class="fragment fade-up"><strong>Metrics Server</strong> scrapes kubelet's <code>/metrics/resource</code> endpoint every 15 seconds</li>
+                        <li class="fragment fade-up"><strong>Metrics Server</strong> scrapes kubelet's <code>/metrics/resource</code> endpoint on a short, configurable interval (15s by default)</li>
                         <li class="fragment fade-up"><strong>Metrics Server</strong> aggregates and serves data via the <code>metrics.k8s.io</code> API</li>
                         <li class="fragment fade-up"><strong>HPA controller</strong> queries <code>metrics.k8s.io</code> every 15 seconds (default)</li>
                         <li class="fragment fade-up"><strong>HPA controller</strong> calculates desired replicas and patches the Deployment</li>
@@ -611,6 +611,44 @@ spec:
                 <aside class="notes">If HPA targets CPU and VPA adjusts CPU requests, they create a feedback loop. Safe patterns: VPA in Off mode alongside HPA, or HPA on custom metrics while VPA handles resource sizing.</aside>
             </section>
 
+            <!-- Section Divider: Cluster Autoscaler -->
+            <section data-background="linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)" class="section-divider">
+                <h2>&#9729;&#65039; Cluster Autoscaler</h2>
+                <h3>Scaling the nodes, not just the pods</h3>
+                <aside class="notes">HPA and VPA scale pods; Cluster Autoscaler scales the nodes underneath them. This is the third autoscaler exercised in Lab 2.</aside>
+            </section>
+
+            <!-- Cluster Autoscaler Overview -->
+            <section>
+                <h2>&#9729;&#65039; Cluster Autoscaler — Node-Level Scaling</h2>
+                <div class="concept-box">
+                    <h4>HPA and VPA scale pods — but pods need nodes to run on</h4>
+                    <p>When pods stay <strong>Pending</strong> because no node has enough CPU/memory, the Cluster Autoscaler adds nodes. When nodes sit underutilized, it removes them.</p>
+                </div>
+                <div class="two-columns fragment fade-up">
+                    <div class="card">
+                        <h4>&#10133; Scale Up</h4>
+                        <ul>
+                            <li>Watches for Pending pods that fail scheduling on a resource shortfall</li>
+                            <li>Adds nodes to an EC2 Auto Scaling Group / managed node group</li>
+                            <li>Respects node group <code>min</code>/<code>max</code> size bounds</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>&#10134; Scale Down</h4>
+                        <ul>
+                            <li>Removes nodes left underutilized for ~10 minutes</li>
+                            <li>Reschedules their pods onto the remaining nodes</li>
+                            <li>Skips nodes whose pods cannot be safely evicted (respects PDBs)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="key-point fragment fade-up">
+                    <strong>On EKS:</strong> Cluster Autoscaler drives node group capacity; <strong>Karpenter</strong> is a modern alternative that provisions right-sized nodes directly from pending-pod requirements.
+                </div>
+                <aside class="notes">Cluster Autoscaler is node-level, not pod-level: it reacts to unschedulable (Pending) pods by adding nodes and consolidates by removing idle ones. In Lab 2 you trigger this by requesting more CPU than the cluster can schedule and watch new nodes join (2-5 minutes). Karpenter is the newer EKS-native approach.</aside>
+            </section>
+
             <!-- Section Divider: KEDA -->
             <section data-background="linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)" class="section-divider">
                 <h2>&#9889; KEDA</h2>
@@ -772,14 +810,14 @@ spec:
             <!-- Lab Callout -->
             <section data-background="linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%)" class="lab-callout">
                 <h2>&#128295; Lab 2: Configuring Autoscaling</h2>
-                <h3>Hands-on: HPA with load testing</h3>
+                <h3>Hands-on: HPA, VPA, and Cluster Autoscaler</h3>
                 <ul>
                     <li>Deploy an application with resource requests and limits</li>
-                    <li>Create an HPA targeting CPU utilization</li>
-                    <li>Generate load and observe scaling behavior</li>
+                    <li>Create an HPA on CPU, generate load, and observe scaling</li>
+                    <li>Apply a v2 HPA and tune behavior policies (stabilization windows)</li>
+                    <li>Configure a VPA in Off mode and review its recommendations</li>
+                    <li>Trigger unschedulable pods and watch the Cluster Autoscaler add nodes</li>
                     <li>Monitor with <code>kubectl top</code> and <code>kubectl get hpa -w</code></li>
-                    <li>Tune behavior policies and observe the difference</li>
-                    <li>Review HPA events and conditions</li>
                 </ul>
                 <div class="highlight-box">
                     <strong>Duration:</strong> ~45 minutes

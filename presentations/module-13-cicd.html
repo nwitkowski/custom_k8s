@@ -104,7 +104,7 @@
                     </div>
                 </div>
                 <div class="highlight-box fragment">
-                    <strong>Lab 13:</strong> CI/CD Integration &mdash; build a complete pipeline with GitOps-based deployment (~45 minutes)
+                    <strong>Lab 13:</strong> GitOps with ArgoCD &mdash; declarative application delivery, sync, and rollback (~30 minutes)
                 </div>
                 <aside class="notes">We'll cover CI/CD fundamentals for Kubernetes, GitOps as a deployment philosophy, ArgoCD and FluxCD as the leading GitOps tools, then deployment patterns before the hands-on lab.</aside>
             </section>
@@ -1081,18 +1081,18 @@ argocd app rollback frontend 3</code></pre>
 
             <!-- Slide 32: Lab Callout -->
             <section data-background="linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%)" class="lab-callout" style="text-align: center;">
-                <h2>&#128736;&#65039; Lab 13: CI/CD Integration</h2>
-                <h3>Estimated Time: ~45 minutes</h3>
+                <h2>&#128736;&#65039; Lab 13: GitOps with ArgoCD</h2>
+                <h3>Estimated Time: ~30 minutes</h3>
                 <div class="highlight-box" style="display: inline-block; text-align: left; margin-top: 20px;">
                     <ul>
-                        <li>Build, tag, and push a container image to ECR</li>
-                        <li>Deploy an application manually with kubectl and envsubst</li>
-                        <li>Create an ArgoCD Application and observe sync behavior</li>
-                        <li>Trigger a pipeline with a code change and redeploy</li>
-                        <li>Create a FluxCD HelmRelease and test drift reconciliation</li>
+                        <li>Explore the ArgoCD UI and CLI</li>
+                        <li>Create an ArgoCD Application from a public Git repo</li>
+                        <li>Observe sync status and application health</li>
+                        <li>Make a change, trigger a sync, and perform a rollback</li>
+                        <li><em>Optional:</em> Explore FluxCD reconciliation and drift detection</li>
                     </ul>
                 </div>
-                <aside class="notes">Full CI/CD lifecycle lab: build/push to ECR, deploy with kubectl, create ArgoCD Application, trigger pipeline with code change, and test FluxCD drift reconciliation.</aside>
+                <aside class="notes">GitOps lab with ArgoCD: explore the UI and CLI, create an Application from a Git repo, observe sync status and health, trigger a sync from a change and roll it back. FluxCD drift detection is an optional stretch goal.</aside>
             </section>
 
             <!-- Slide 33: Key Takeaways -->

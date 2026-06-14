@@ -851,7 +851,7 @@ containers:
                 <div class="highlight-box success fragment fade-up">
                     <strong>Zero code changes:</strong> The AWS SDK credential chain detects IRSA environment variables automatically.
                 </div>
-                <aside class="notes">The projected token is short-lived (default 24h), audience-scoped to sts.amazonaws.com, and auto-rotated by the kubelet. The SDK handles everything transparently.</aside>
+                <aside class="notes">The projected token is short-lived and auto-rotated by the kubelet — EKS injects a 24h token by default, though expirationSeconds can shorten it (the earlier example uses 1h). It is audience-scoped to sts.amazonaws.com, and the SDK handles everything transparently.</aside>
             </section>
 
             <!-- IRSA Slide 3: ServiceAccount Annotation + Trust Policy -->
@@ -934,7 +934,7 @@ metadata:
                     <li>Annotate a ServiceAccount for IRSA and verify scoped AWS credentials</li>
                 </ul>
                 <div class="highlight-box">
-                    <strong>Duration:</strong> ~45 minutes
+                    <strong>Duration:</strong> ~45-55 minutes
                 </div>
                 <aside class="notes">Full RBAC workflow plus security contexts, Pod Security Admission, and IRSA. Common issues: missing namespace in RoleBindings, wrong apiGroup in subjects. Key diagnostic: kubectl auth can-i.</aside>
             </section>

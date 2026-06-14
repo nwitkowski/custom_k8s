@@ -1,4 +1,4 @@
-# Instructor Setup — Verisign Kubernetes Course
+# Instructor Setup — Intermediate Kubernetes Course
 
 ---
 

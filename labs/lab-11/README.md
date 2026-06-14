@@ -26,7 +26,7 @@
 ## Step 1: Deploy v1 of the Application
 
 ```bash
-cd ~/environment/verisign_k8s/labs/lab-11
+cd ~/environment/custom_k8s/labs/lab-11
 export STUDENT_NAME=<your-name>
 echo "Student: $STUDENT_NAME"
 kubectl config set-context --current --namespace=default

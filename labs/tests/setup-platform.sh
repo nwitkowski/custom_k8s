@@ -80,10 +80,10 @@ if [ -z "${FLUX_DIR:-}" ]; then
   for candidate in \
     "$SCRIPT_DIR/../../eks-platform/flux" \
     "$HOME/environment/eks-platform/flux" \
-    "$HOME/environment/verisign_k8s/eks-platform/flux" \
+    "$HOME/environment/custom_k8s/eks-platform/flux" \
     "$HOME/eks-platform/flux" \
     "/home/ec2-user/environment/eks-platform/flux" \
-    "/home/ec2-user/environment/verisign_k8s/eks-platform/flux"; do
+    "/home/ec2-user/environment/custom_k8s/eks-platform/flux"; do
     if [ -d "$candidate/infrastructure" ]; then
       FLUX_DIR="$(cd "$candidate" && pwd)"
       break

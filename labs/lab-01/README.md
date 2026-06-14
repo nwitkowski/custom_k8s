@@ -75,8 +75,8 @@ Clone the course repository into your Cloud9 workspace — every lab starts from
 
 ```bash
 cd ~/environment
-git clone https://github.com/jwkidd3/verisign_k8s.git
-cd verisign_k8s/labs/lab-01
+git clone https://github.com/jwkidd3/custom_k8s.git
+cd custom_k8s/labs/lab-01
 ```
 
 > ⚠️ **Choose your student name now.** It is used in namespace names, service accounts, and app names across all labs, so it must be **lowercase letters, digits, and hyphens only — no dots, underscores, or uppercase — and 20 characters or fewer** (e.g., `jsmith`, `alice-w`).

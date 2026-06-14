@@ -46,7 +46,7 @@
 Set your student identifier (use your first name or assigned number):
 
 ```bash
-cd ~/environment/verisign_k8s/labs/lab-10
+cd ~/environment/custom_k8s/labs/lab-10
 # Set your unique student name
 export STUDENT_NAME=<your-name>
 echo "Student: $STUDENT_NAME"

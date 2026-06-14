@@ -30,3 +30,6 @@
 **/crash.log
 **/crash.*.log
 
+
+# E2E run logs
+logs/

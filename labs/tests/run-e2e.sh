@@ -12,7 +12,7 @@
 # Usage:
 #   export TF_VAR_github_token=ghp_xxx     # classic PAT, scopes: repo + delete_repo
 #   export GITHUB_TOKEN=$TF_VAR_github_token
-#   bash run-e2e.sh [options]
+#   bash labs/tests/run-e2e.sh [options]
 #
 # Options:
 #   --teardown on-success   (default) destroy only if every test passes; keep on failure
@@ -22,16 +22,17 @@
 #   --skip-tests            build (and optionally tear down) without running the lab tests
 #   -h | --help
 #
-# Survive disconnect: run under tmux/screen, e.g.  tmux new -s e2e 'bash run-e2e.sh'
+# Survive disconnect: run under tmux/screen, e.g.  tmux new -s e2e 'bash labs/tests/run-e2e.sh'
 # (and `caffeinate -s` on macOS so the Mac does not sleep mid-run).
 ###############################################################################
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TF_DIR="$SCRIPT_DIR/eks-platform/terraform"
-TESTS_DIR="$SCRIPT_DIR/labs/tests"
-LOG_DIR="$SCRIPT_DIR/logs"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"          # labs/tests
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+TF_DIR="$REPO_ROOT/eks-platform/terraform"
+TESTS_DIR="$SCRIPT_DIR"
+LOG_DIR="$REPO_ROOT/logs"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG="$LOG_DIR/e2e-$STAMP.log"
 

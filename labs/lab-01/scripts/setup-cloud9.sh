@@ -13,6 +13,7 @@ set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 CLUSTER_NAME="platform-lab"
@@ -52,6 +53,42 @@ else
   echo "  1. Disabled Cloud9 managed credentials (Cloud9 > Preferences > AWS Settings)"
   echo "  2. Attached k8s-lab-role to your Cloud9 EC2 instance"
   exit 1
+fi
+
+# ─── Resize the root EBS volume (Cloud9 default 10 GB → 100 GB) ─────────────
+
+echo ""
+echo "==> Checking root EBS volume size..."
+TARGET_GB=100
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 120")
+INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/instance-id)
+AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/placement/availability-zone)
+EC2_REGION="${AZ%?}"   # strip the trailing AZ letter to get the region
+
+VOLUME_ID=$(aws ec2 describe-volumes --region "$EC2_REGION" \
+  --filters "Name=attachment.instance-id,Values=$INSTANCE_ID" \
+  --query "Volumes[0].VolumeId" --output text)
+CURRENT_GB=$(aws ec2 describe-volumes --region "$EC2_REGION" \
+  --volume-ids "$VOLUME_ID" --query "Volumes[0].Size" --output text)
+
+REBOOT_NEEDED=false
+if [ "$CURRENT_GB" -ge "$TARGET_GB" ]; then
+  echo -e "${GREEN}Root volume already ${CURRENT_GB} GB — no resize needed${NC}"
+else
+  echo "==> Resizing $VOLUME_ID from ${CURRENT_GB} GB to ${TARGET_GB} GB..."
+  aws ec2 modify-volume --region "$EC2_REGION" --volume-id "$VOLUME_ID" --size "$TARGET_GB" >/dev/null
+  echo "    Waiting for the EBS modification to apply..."
+  while [ "$(aws ec2 describe-volumes-modifications --region "$EC2_REGION" \
+      --volume-id "$VOLUME_ID" \
+      --filters Name=modification-state,Values=optimizing,completed \
+      --query "length(VolumesModifications)" --output text)" != "1" ]; do
+    sleep 2
+  done
+  REBOOT_NEEDED=true
+  echo -e "${GREEN}EBS volume expanded to ${TARGET_GB} GB${NC} (filesystem grows on reboot)"
 fi
 
 # ─── Install kubectl ───────────────────────────────────────────────────────
@@ -133,3 +170,14 @@ echo "Student: $STUDENT_NAME"
 echo ""
 echo "STUDENT_NAME has been added to ~/.bashrc so it persists across terminal sessions."
 echo "For the current terminal, run: export STUDENT_NAME=$STUDENT_NAME"
+
+if [ "$REBOOT_NEEDED" = true ]; then
+  echo ""
+  echo -e "${YELLOW}=== ACTION REQUIRED: reboot to apply the disk resize ===${NC}"
+  echo "The root volume was expanded to ${TARGET_GB} GB. Run:"
+  echo ""
+  echo -e "    ${YELLOW}sudo reboot${NC}"
+  echo ""
+  echo "After it reboots (~1 min), reconnect — the filesystem will fill the 100 GB"
+  echo "automatically. Your installed tools and kubeconfig persist across the reboot."
+fi

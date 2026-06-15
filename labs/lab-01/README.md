@@ -24,7 +24,7 @@
 ## Step 1: Create Your Cloud9 Environment
 
 1. Sign in to the **AWS Management Console** at [https://kiddcorp.signin.aws.amazon.com/console](https://kiddcorp.signin.aws.amazon.com/console) using the credentials provided by the instructor
-2. Set the region to **US East (Ohio) / us-east-2** (top-right dropdown)
+2. Set the region to **US East (N. Virginia) / us-east-1** (top-right dropdown)
 3. Search for **Cloud9** in the services search bar and open it
 4. Click **Create environment**
 5. Set **Name** to `k8s-lab-<your-name>`
@@ -37,6 +37,8 @@
 12. Wait 1-2 minutes for the status to show **Ready**, then click **Open** to launch the IDE
 
 You will work in the Cloud9 terminal (bottom panel) for all labs.
+
+> **Note:** Create the Cloud9 environment in **us-east-1**. The EKS cluster runs in **us-east-2** — this cross-region setup is expected and not a problem; the connection commands target us-east-2 explicitly.
 
 ---
 

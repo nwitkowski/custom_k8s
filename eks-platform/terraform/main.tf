@@ -151,6 +151,15 @@ resource "helm_release" "metrics_server" {
   namespace  = "kube-system"
   version    = "3.12.2"
 
+  # EKS does not auto-approve kubelet *serving* CSRs, so the kubelet serving
+  # certs can't be validated by metrics-server and it never completes a scrape
+  # (pod stays NotReady -> metrics.k8s.io APIService has no endpoints ->
+  # "Metrics API not available"). Skip kubelet cert verification.
+  set {
+    name  = "args[0]"
+    value = "--kubelet-insecure-tls"
+  }
+
   depends_on = [module.eks]
 }
 

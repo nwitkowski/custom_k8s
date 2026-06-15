@@ -77,8 +77,11 @@ helm upgrade my-podinfo podinfo/podinfo -n "$NS" \
 REVISION=$(helm history my-podinfo -n "$NS" -o json 2>/dev/null | jq 'length' 2>/dev/null)
 assert_eq "release at revision 2" "2" "$REVISION"
 
+# Check the desired replica count (.spec.replicas), set immediately by the
+# upgrade — not .status.readyReplicas, which can lag at 2 during the 2->3 roll
+# since helm --wait returns once the deployment is "available".
 REPLICAS_UP=$(kubectl get deployment -n "$NS" -l app.kubernetes.io/name=my-podinfo \
-  -o jsonpath='{.items[0].status.readyReplicas}' 2>/dev/null)
+  -o jsonpath='{.items[0].spec.replicas}' 2>/dev/null)
 assert_eq "upgraded to 3 replicas" "3" "$REPLICAS_UP"
 
 LIST_REV=$(helm list -n "$NS" -o json 2>/dev/null | jq -r '.[0].revision' 2>/dev/null)

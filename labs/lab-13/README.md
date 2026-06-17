@@ -56,24 +56,30 @@ echo "ArgoCD password: $ARGOCD_PWD"
 Access the ArgoCD UI:
 
 ```bash
-kubectl port-forward svc/argocd-argocd-server -n argocd 8080:443 &
+# The server Service name varies by install — look it up, then port-forward it
+ARGOCD_SVC=$(kubectl get svc -n argocd -o name | grep -E 'server$' | head -1)
+kubectl port-forward -n argocd "$ARGOCD_SVC" 8080:443 &
 ```
 
 > ⚠️ **Cloud9:** Click **Preview → Preview Running Application** to open the UI. Login: `admin` / password from above.
 
 ---
 
-## Step 2: Log In with the ArgoCD CLI
+## Step 2: Connect the ArgoCD CLI (core mode)
+
+Use **core mode** — the CLI talks directly to the cluster through your kubeconfig, so no port-forward or `argocd login` is needed (and it avoids the server address/TLS issues that trip up the login flow):
 
 ```bash
-argocd login localhost:8080 --username admin --password $ARGOCD_PWD --insecure
+kubectl config set-context --current --namespace=argocd
+export ARGOCD_OPTS='--core'
 
 argocd version
 argocd cluster list
 argocd proj list
+argocd app list
 ```
 
-> ✅ **Checkpoint:** CLI shows the in-cluster destination and the `default` project.
+> ✅ **Checkpoint:** CLI shows the in-cluster destination and the `default` project. `argocd app list` is empty until you create an Application (next step). Keep `ARGOCD_OPTS=--core` exported for the rest of the lab; re-export it if you open a new terminal.
 
 ---
 

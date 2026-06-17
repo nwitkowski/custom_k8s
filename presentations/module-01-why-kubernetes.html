@@ -103,13 +103,13 @@
             <section>
                 <h2>&#127919; Module Objectives</h2>
                 <ul>
-                    <li class="fragment fade-up">Articulate the developer value proposition of Kubernetes</li>
-                    <li class="fragment fade-up">Trace the journey from source code to running cluster workload</li>
-                    <li class="fragment fade-up">Define the developer-platform contract and responsibilities</li>
-                    <li class="fragment fade-up">Review core abstractions (Pod, Deployment, Service) through a developer lens</li>
-                    <li class="fragment fade-up">Compare declarative vs. imperative approaches</li>
-                    <li class="fragment fade-up">Connect 12-factor app principles to Kubernetes patterns</li>
-                    <li class="fragment fade-up">Preview the full 13-module course roadmap</li>
+                    <li>Articulate the developer value proposition of Kubernetes</li>
+                    <li>Trace the journey from source code to running cluster workload</li>
+                    <li>Define the developer-platform contract and responsibilities</li>
+                    <li>Review core abstractions (Pod, Deployment, Service) through a developer lens</li>
+                    <li>Compare declarative vs. imperative approaches</li>
+                    <li>Connect 12-factor app principles to Kubernetes patterns</li>
+                    <li>Preview the full 13-module course roadmap</li>
                 </ul>
                 <aside class="notes">Every subsequent module builds on the "why" we establish here. Encourage participants to think about how their current workflow maps to these concepts.</aside>
             </section>
@@ -128,19 +128,19 @@
                     <div class="card">
                         <h4>Deployment Challenges</h4>
                         <ul>
-                            <li class="fragment fade-up">"Works on my machine" syndrome</li>
-                            <li class="fragment fade-up">Manual server provisioning tickets</li>
-                            <li class="fragment fade-up">Environment drift between dev/staging/prod</li>
-                            <li class="fragment fade-up">Multi-hour deployment windows</li>
+                            <li>"Works on my machine" syndrome</li>
+                            <li>Manual server provisioning tickets</li>
+                            <li>Environment drift between dev/staging/prod</li>
+                            <li>Multi-hour deployment windows</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>Operational Burden</h4>
                         <ul>
-                            <li class="fragment fade-up">Developers on-call for infrastructure issues</li>
-                            <li class="fragment fade-up">Scaling requires capacity planning meetings</li>
-                            <li class="fragment fade-up">Rollback = panic + SSH + hope</li>
-                            <li class="fragment fade-up">No self-service for infrastructure needs</li>
+                            <li>Developers on-call for infrastructure issues</li>
+                            <li>Scaling requires capacity planning meetings</li>
+                            <li>Rollback = panic + SSH + hope</li>
+                            <li>No self-service for infrastructure needs</li>
                         </ul>
                     </div>
                 </div>
@@ -154,19 +154,19 @@
                     <div class="card">
                         <h4>Deployment Gains</h4>
                         <ul>
-                            <li class="fragment fade-up">Containers guarantee environment parity</li>
-                            <li class="fragment fade-up">Self-service deployments via <code>kubectl apply</code></li>
-                            <li class="fragment fade-up">Same manifest works dev → staging → prod</li>
-                            <li class="fragment fade-up">Rolling updates with zero downtime</li>
+                            <li>Containers guarantee environment parity</li>
+                            <li>Self-service deployments via <code>kubectl apply</code></li>
+                            <li>Same manifest works dev → staging → prod</li>
+                            <li>Rolling updates with zero downtime</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>Operational Gains</h4>
                         <ul>
-                            <li class="fragment fade-up">Platform team owns infrastructure</li>
-                            <li class="fragment fade-up">Auto-scaling based on actual metrics</li>
-                            <li class="fragment fade-up">Rollback = <code>kubectl rollout undo</code></li>
-                            <li class="fragment fade-up">Declarative config = version-controlled infra</li>
+                            <li>Platform team owns infrastructure</li>
+                            <li>Auto-scaling based on actual metrics</li>
+                            <li>Rollback = <code>kubectl rollout undo</code></li>
+                            <li>Declarative config = version-controlled infra</li>
                         </ul>
                     </div>
                 </div>
@@ -233,13 +233,13 @@
                 <div class="concept-box">
                     <h4>The Developer Pipeline</h4>
                     <ol>
-                        <li class="fragment fade-up"><strong>Write Code</strong> — Application logic, tests, Dockerfile</li>
-                        <li class="fragment fade-up"><strong>Build Image</strong> — <code>docker build -t myapp:v1.2.3 .</code></li>
-                        <li class="fragment fade-up"><strong>Push to Registry</strong> — <code>docker push ecr-repo/myapp:v1.2.3</code></li>
-                        <li class="fragment fade-up"><strong>Declare Desired State</strong> — Write/update Kubernetes manifests</li>
-                        <li class="fragment fade-up"><strong>Apply to Cluster</strong> — <code>kubectl apply -f k8s/</code></li>
-                        <li class="fragment fade-up"><strong>Kubernetes Reconciles</strong> — Controller loop makes it so</li>
-                        <li class="fragment fade-up"><strong>Observe &amp; Iterate</strong> — Logs, metrics, traces</li>
+                        <li><strong>Write Code</strong> — Application logic, tests, Dockerfile</li>
+                        <li><strong>Build Image</strong> — <code>docker build -t myapp:v1.2.3 .</code></li>
+                        <li><strong>Push to Registry</strong> — <code>docker push ecr-repo/myapp:v1.2.3</code></li>
+                        <li><strong>Declare Desired State</strong> — Write/update Kubernetes manifests</li>
+                        <li><strong>Apply to Cluster</strong> — <code>kubectl apply -f k8s/</code></li>
+                        <li><strong>Kubernetes Reconciles</strong> — Controller loop makes it so</li>
+                        <li><strong>Observe &amp; Iterate</strong> — Logs, metrics, traces</li>
                     </ol>
                 </div>
                 <aside class="notes">In practice, steps 2-5 are usually automated by CI/CD, but developers need to understand each step.</aside>
@@ -330,14 +330,14 @@
                     <h4>The API Server is the single point of interaction</h4>
                     <p><code>kubectl</code>, CI/CD pipelines, controllers, and the scheduler all speak the same API.</p>
                 </div>
-                <div class="fragment fade-up">
+                <div>
                     <pre><code class="language-bash"># Every developer action is an API call
 kubectl apply -f deployment.yaml    # POST/PUT to /apis/apps/v1/deployments
 kubectl get pods                    # GET to /api/v1/pods
 kubectl logs my-pod                 # GET to /api/v1/pods/my-pod/log
 kubectl port-forward svc/myapp 8080 # Upgrade to SPDY/WebSocket</code></pre>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Why this matters:</strong> The API is versioned and consistent. Your manifests work on future clusters thanks to API compatibility guarantees.
                 </div>
                 <aside class="notes">kubectl is just an HTTP client. The versioned API is a stability guarantee — you write against a contract, not an implementation.</aside>
@@ -347,7 +347,7 @@ kubectl port-forward svc/myapp 8080 # Upgrade to SPDY/WebSocket</code></pre>
             <section>
                 <h2>&#127381; Self-Service Infrastructure</h2>
                 <p>Infrastructure requests become API calls -- no tickets required:</p>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>I need...</h4>
                         <ul>
@@ -437,11 +437,11 @@ kubectl port-forward svc/myapp 8080 # Upgrade to SPDY/WebSocket</code></pre>
                 <div class="two-columns">
                     <div>
                         <ul>
-                            <li class="fragment fade-up">Smallest deployable unit in K8s</li>
-                            <li class="fragment fade-up">One or more containers sharing network &amp; storage</li>
-                            <li class="fragment fade-up">Every container in a pod shares <code>localhost</code></li>
-                            <li class="fragment fade-up">Pods are <strong>ephemeral</strong> — they can be killed and rescheduled</li>
-                            <li class="fragment fade-up">You rarely create pods directly — use Deployments</li>
+                            <li>Smallest deployable unit in K8s</li>
+                            <li>One or more containers sharing network &amp; storage</li>
+                            <li>Every container in a pod shares <code>localhost</code></li>
+                            <li>Pods are <strong>ephemeral</strong> — they can be killed and rescheduled</li>
+                            <li>You rarely create pods directly — use Deployments</li>
                         </ul>
                     </div>
                     <div>
@@ -478,10 +478,10 @@ spec:
                     <div>
                         <h4>What Deployments provide:</h4>
                         <ul>
-                            <li class="fragment fade-up"><strong>Desired state</strong> — declare replica count and Kubernetes reconciles continuously</li>
-                            <li class="fragment fade-up"><strong>Rolling updates</strong> — new pods start before old ones terminate (<code>maxUnavailable: 0</code>)</li>
-                            <li class="fragment fade-up"><strong>Rollback</strong> — instantly revert to a previous revision with <code>kubectl rollout undo</code></li>
-                            <li class="fragment fade-up"><strong>Self-healing</strong> — failed pods are automatically replaced to match the desired count</li>
+                            <li><strong>Desired state</strong> — declare replica count and Kubernetes reconciles continuously</li>
+                            <li><strong>Rolling updates</strong> — new pods start before old ones terminate (<code>maxUnavailable: 0</code>)</li>
+                            <li><strong>Rollback</strong> — instantly revert to a previous revision with <code>kubectl rollout undo</code></li>
+                            <li><strong>Self-healing</strong> — failed pods are automatically replaced to match the desired count</li>
                         </ul>
                     </div>
                 </div>
@@ -504,13 +504,13 @@ spec:
                     <div>
                         <h4>Why Services exist:</h4>
                         <ul>
-                            <li class="fragment fade-up">Pods have dynamic IPs — they change on restart</li>
-                            <li class="fragment fade-up">Services provide a <strong>stable</strong> virtual IP</li>
-                            <li class="fragment fade-up">Built-in load balancing across pod replicas</li>
-                            <li class="fragment fade-up">DNS-based discovery — no hardcoded IPs</li>
-                            <li class="fragment fade-up">Selector connects Service to Pods via labels</li>
+                            <li>Pods have dynamic IPs — they change on restart</li>
+                            <li>Services provide a <strong>stable</strong> virtual IP</li>
+                            <li>Built-in load balancing across pod replicas</li>
+                            <li>DNS-based discovery — no hardcoded IPs</li>
+                            <li>Selector connects Service to Pods via labels</li>
                         </ul>
-                        <div class="key-point fragment fade-up">
+                        <div class="key-point">
                             <strong>Think of it as:</strong> A stable address that always routes to healthy pods.
                         </div>
                     </div>
@@ -599,7 +599,7 @@ git diff deployment.yaml</code></pre>
                     <h4>The Promise</h4>
                     <p>The same container image runs identically in every environment. Configuration is injected, not baked in.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>What stays the same</h4>
                         <ul>
@@ -637,7 +637,7 @@ k8s/
 │   │   └── ...                # Same structure as dev
 │   └── prod/
 │       └── ...                # Same structure as dev</code></pre>
-                <pre class="fragment fade-up"><code class="language-bash"># Deploy to each environment
+                <pre><code class="language-bash"># Deploy to each environment
 kubectl apply -k k8s/overlays/dev/
 kubectl apply -k k8s/overlays/staging/
 kubectl apply -k k8s/overlays/prod/</code></pre>
@@ -742,7 +742,7 @@ kubectl apply -k k8s/overlays/prod/</code></pre>
                         </tr>
                     </tbody>
                 </table>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Design implication:</strong> Applications that follow these principles are "Kubernetes-native" — they leverage the platform fully and avoid fighting it.
                 </div>
                 <aside class="notes">Factor IX: Kubernetes will kill and reschedule pods -- handle SIGTERM gracefully. Factor XI: never write to log files inside the container; write to stdout/stderr.</aside>
@@ -767,14 +767,67 @@ kubectl apply -k k8s/overlays/prod/</code></pre>
                     <div>
                         <h4>Graceful shutdown sequence:</h4>
                         <ul>
-                            <li class="fragment fade-up">Pod is removed from Service endpoints — no new traffic is routed</li>
-                            <li class="fragment fade-up"><strong>preStop hook</strong> runs first — the <code>sleep 5</code> allows in-flight requests to drain</li>
-                            <li class="fragment fade-up"><strong>SIGTERM</strong> is sent to the container process — the app should finish work and exit</li>
-                            <li class="fragment fade-up">After <code>terminationGracePeriodSeconds</code>, Kubernetes sends <strong>SIGKILL</strong> to force termination</li>
+                            <li>Pod is removed from Service endpoints — no new traffic is routed</li>
+                            <li><strong>preStop hook</strong> runs first — the <code>sleep 5</code> allows in-flight requests to drain</li>
+                            <li><strong>SIGTERM</strong> is sent to the container process — the app should finish work and exit</li>
+                            <li>After <code>terminationGracePeriodSeconds</code>, Kubernetes sends <strong>SIGKILL</strong> to force termination</li>
                         </ul>
                     </div>
                 </div>
                 <aside class="notes">The preStop sleep gives kube-proxy and ingress controllers time to update routing before the pod stops accepting traffic. Not handling SIGTERM means dropped in-flight requests.</aside>
+            </section>
+
+            <!-- Section Divider: Architecture -->
+            <section data-background="linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)" class="section-divider">
+                <h2>&#127959;&#65039; Kubernetes Architecture</h2>
+                <h3>What's under the hood &mdash; and why developers should care</h3>
+                <aside class="notes">A brief architecture primer: the control plane, the worker nodes, and the pluggable interfaces. Just enough internals to reason about where your workloads run.</aside>
+            </section>
+
+            <!-- Architecture: Control Plane vs Nodes -->
+            <section>
+                <h2>&#127959;&#65039; Control Plane vs. Worker Nodes</h2>
+                <div class="two-columns">
+                    <div class="card">
+                        <h4>&#129504; Control Plane <span style="font-weight:400;">(AWS-managed on EKS)</span></h4>
+                        <ul>
+                            <li><strong>API Server</strong> &mdash; the front door; everything talks to it</li>
+                            <li><strong>etcd</strong> &mdash; key-value store, the cluster's source of truth</li>
+                            <li><strong>Scheduler</strong> &mdash; places Pods onto nodes</li>
+                            <li><strong>Controller Manager</strong> &mdash; reconcile loops driving actual &rarr; desired</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>&#128187; Worker Nodes <span style="font-weight:400;">(your EC2 instances)</span></h4>
+                        <ul>
+                            <li><strong>kubelet</strong> &mdash; runs and watches your Pods</li>
+                            <li><strong>kube-proxy</strong> &mdash; programs Service networking on the node</li>
+                            <li><strong>container runtime</strong> &mdash; containerd; pulls images, runs containers</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="key-point">
+                    <strong>Developer takeaway:</strong> you only ever talk to the <em>API server</em> (via <code>kubectl</code> / manifests); controllers and the kubelet make your declared state real.
+                </div>
+                <aside class="notes">On EKS, AWS runs the control plane — you never SSH into it. You manage the worker nodes and your workloads. The reconcile loop (controllers continuously comparing desired vs actual) is the heart of Kubernetes.</aside>
+            </section>
+
+            <!-- Architecture: Pluggable Interfaces -->
+            <section>
+                <h2>&#128268; The Pluggable Interfaces</h2>
+                <p>The core doesn't hard-code runtime, networking, or storage &mdash; each is a swappable interface:</p>
+                <table>
+                    <thead><tr><th>Interface</th><th>Plugs in</th><th>On EKS</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>CRI</strong> &mdash; Container Runtime</td><td>How containers run</td><td>containerd</td></tr>
+                        <tr><td><strong>CNI</strong> &mdash; Container Network</td><td>Pod networking &amp; IPs</td><td>AWS VPC CNI + Calico</td></tr>
+                        <tr><td><strong>CSI</strong> &mdash; Container Storage</td><td>Volume provisioning</td><td>EBS CSI driver</td></tr>
+                    </tbody>
+                </table>
+                <div class="key-point">
+                    <strong>Why it matters:</strong> the gp3 StorageClass, Pod IPs, and NetworkPolicies you'll use in later labs are delivered by these plug-in drivers &mdash; not the Kubernetes core.
+                </div>
+                <aside class="notes">CRI/CNI/CSI keep the core small and vendor-neutral — the same manifests run on EKS, GKE, or kind; only the drivers differ. This ties directly to storage (Lab 3), network policy (Lab 8), and the CNI.</aside>
             </section>
 
             <!-- Section Divider: EKS Context -->
@@ -805,7 +858,7 @@ kubectl apply -k k8s/overlays/prod/</code></pre>
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box success fragment fade-up">
+                <div class="highlight-box success">
                     <strong>EKS advantage:</strong> The control plane is someone else's problem. You focus on workloads.
                 </div>
                 <aside class="notes">EKS is managed Kubernetes -- AWS handles the control plane, so the platform team focuses on worker nodes and developer enablement.</aside>
@@ -870,7 +923,7 @@ kubectl describe pod myapp-abc123</code></pre>
                         </ul>
                     </div>
                 </div>
-                <p class="fragment fade-up" style="margin-top: 20px; text-align: center; font-style: italic;">Every tier maps to a small set of primitives -- master these and you can model any architecture.</p>
+                <p style="margin-top: 20px; text-align: center; font-style: italic;">Every tier maps to a small set of primitives -- master these and you can model any architecture.</p>
                 <aside class="notes">A typical N-tier app uses fewer than ten K8s resource types. Each is covered in a dedicated module.</aside>
             </section>
 
@@ -878,14 +931,14 @@ kubectl describe pod myapp-abc123</code></pre>
             <section>
                 <h2>&#128737;&#65039; Enterprise Architecture on EKS</h2>
                 <ul>
-                    <li class="fragment fade-up"><strong>DNS-critical services</strong> — multi-AZ scheduling + PodDisruptionBudgets</li>
-                    <li class="fragment fade-up"><strong>Dual Ingress</strong> — separate internal vs. external traffic</li>
-                    <li class="fragment fade-up"><strong>GitOps via FluxCD</strong> — Git as single source of truth</li>
-                    <li class="fragment fade-up"><strong>Vault + ESO</strong> — secrets management with Kubernetes auth</li>
-                    <li class="fragment fade-up"><strong>ECR</strong> — scanned container images</li>
-                    <li class="fragment fade-up"><strong>Observability</strong> — Prometheus, Grafana, Splunk</li>
+                    <li><strong>DNS-critical services</strong> — multi-AZ scheduling + PodDisruptionBudgets</li>
+                    <li><strong>Dual Ingress</strong> — separate internal vs. external traffic</li>
+                    <li><strong>GitOps via FluxCD</strong> — Git as single source of truth</li>
+                    <li><strong>Vault + ESO</strong> — secrets management with Kubernetes auth</li>
+                    <li><strong>ECR</strong> — scanned container images</li>
+                    <li><strong>Observability</strong> — Prometheus, Grafana, Splunk</li>
                 </ul>
-                <p class="fragment fade-up" style="margin-top: 20px; font-style: italic;">Each pattern is covered hands-on in Modules 5-13.</p>
+                <p style="margin-top: 20px; font-style: italic;">Each pattern is covered hands-on in Modules 5-13.</p>
                 <aside class="notes">Each pattern is covered hands-on in later modules.</aside>
             </section>
 
@@ -975,14 +1028,14 @@ kubectl describe pod myapp-abc123</code></pre>
                 <h2>&#128218; Module 1 — Key Takeaways</h2>
                 <div class="concept-box">
                     <ul>
-                        <li class="fragment fade-up"><strong>Kubernetes is a developer platform</strong> — it transforms infrastructure requests into self-service API calls</li>
-                        <li class="fragment fade-up"><strong>The developer-platform contract</strong> — you define what you need; the platform delivers how</li>
-                        <li class="fragment fade-up"><strong>Core abstractions map to developer needs</strong> — Pod (run), Deployment (manage), Service (connect)</li>
-                        <li class="fragment fade-up"><strong>Declarative &gt; imperative</strong> — YAML in Git is your source of truth</li>
-                        <li class="fragment fade-up"><strong>Environment parity via containers</strong> — same image, different config per environment</li>
-                        <li class="fragment fade-up"><strong>12-factor apps thrive on K8s</strong> — the platform was designed for this pattern</li>
-                        <li class="fragment fade-up"><strong>EKS simplifies operations</strong> — AWS manages the control plane, you manage workloads</li>
-                        <li class="fragment fade-up"><strong>N-tier apps map cleanly to K8s primitives</strong> — Deployment, Service, StatefulSet, Ingress cover most architectures</li>
+                        <li><strong>Kubernetes is a developer platform</strong> — it transforms infrastructure requests into self-service API calls</li>
+                        <li><strong>The developer-platform contract</strong> — you define what you need; the platform delivers how</li>
+                        <li><strong>Core abstractions map to developer needs</strong> — Pod (run), Deployment (manage), Service (connect)</li>
+                        <li><strong>Declarative &gt; imperative</strong> — YAML in Git is your source of truth</li>
+                        <li><strong>Environment parity via containers</strong> — same image, different config per environment</li>
+                        <li><strong>12-factor apps thrive on K8s</strong> — the platform was designed for this pattern</li>
+                        <li><strong>EKS simplifies operations</strong> — AWS manages the control plane, you manage workloads</li>
+                        <li><strong>N-tier apps map cleanly to K8s primitives</strong> — Deployment, Service, StatefulSet, Ingress cover most architectures</li>
                     </ul>
                 </div>
                 <aside class="notes">If participants can articulate these points, they have the right framework for everything that follows.</aside>

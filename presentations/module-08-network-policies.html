@@ -96,13 +96,13 @@
             <section>
                 <h2>&#128203; Module Agenda</h2>
                 <ul>
-                    <li class="fragment fade-up">Kubernetes Networking Fundamentals</li>
-                    <li class="fragment fade-up">Network Policy Basics &amp; Anatomy</li>
-                    <li class="fragment fade-up">Ingress and Egress Rules</li>
-                    <li class="fragment fade-up">Common Policy Patterns</li>
-                    <li class="fragment fade-up">CNI and Network Policy Providers</li>
-                    <li class="fragment fade-up">Real-World Security Strategies</li>
-                    <li class="fragment fade-up">Debugging &amp; Monitoring Network Policies</li>
+                    <li>Kubernetes Networking Fundamentals</li>
+                    <li>Network Policy Basics &amp; Anatomy</li>
+                    <li>Ingress and Egress Rules</li>
+                    <li>Common Policy Patterns</li>
+                    <li>CNI and Network Policy Providers</li>
+                    <li>Real-World Security Strategies</li>
+                    <li>Debugging &amp; Monitoring Network Policies</li>
                 </ul>
                 <aside class="notes">We cover the networking model, policy syntax and patterns, CNI providers, and operational strategies. The lab ties everything together.</aside>
             </section>
@@ -122,10 +122,10 @@
                     <p>Every pod gets its own IP address, and <strong>every pod can reach every other pod</strong> without NAT &mdash; across nodes, across namespaces.</p>
                 </div>
                 <ul>
-                    <li class="fragment fade-up"><strong>Pod-to-Pod:</strong> Direct communication via cluster-internal IPs</li>
-                    <li class="fragment fade-up"><strong>Cross-Namespace:</strong> No isolation boundary by default</li>
-                    <li class="fragment fade-up"><strong>Cross-Node:</strong> CNI plugin handles overlay or native routing</li>
-                    <li class="fragment fade-up"><strong>DNS Resolution:</strong> Every service discoverable via CoreDNS</li>
+                    <li><strong>Pod-to-Pod:</strong> Direct communication via cluster-internal IPs</li>
+                    <li><strong>Cross-Namespace:</strong> No isolation boundary by default</li>
+                    <li><strong>Cross-Node:</strong> CNI plugin handles overlay or native routing</li>
+                    <li><strong>DNS Resolution:</strong> Every service discoverable via CoreDNS</li>
                 </ul>
                 <aside class="notes">The flat network simplifies application networking but creates a large attack surface. A compromised pod can reach every other pod by default.</aside>
             </section>
@@ -136,7 +136,7 @@
                 <div class="highlight-box danger">
                     <strong>Default Behavior:</strong> Every pod can communicate with every other pod on every port. There are no firewalls between workloads.
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>&#128308; Without Network Policies</h4>
                         <ul>
@@ -209,7 +209,7 @@ spec:
       values: [test]</code></pre>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Empty podSelector <code>{}</code></strong> &mdash; Selects <em>all</em> pods in the namespace. This is how you create default deny policies.
                 </div>
                 <aside class="notes">matchLabels uses AND logic. matchExpressions supports In, NotIn, Exists, DoesNotExist operators. The empty selector {} selects every pod in the namespace.</aside>
@@ -230,7 +230,7 @@ spec:
       - ipBlock:
           cidr: 10.0.0.0/8
           except: [10.0.5.0/24]</code></pre>
-                <div class="highlight-box warning fragment fade-up">
+                <div class="highlight-box warning">
                     <strong>OR vs AND:</strong> Separate list items under <code>from:</code> are OR&rsquo;d. Multiple selectors <em>within</em> a single list item are AND&rsquo;d.
                 </div>
                 <aside class="notes">Three source types: podSelector (same namespace), namespaceSelector (other namespaces), ipBlock (CIDR ranges). Separate list items are OR'd; selectors in the same item are AND'd.</aside>
@@ -251,7 +251,7 @@ spec:
   - to:
       - ipBlock: { cidr: 203.0.113.0/24 }
     ports: [{ protocol: TCP, port: 443 }]</code></pre>
-                <div class="highlight-box danger fragment fade-up">
+                <div class="highlight-box danger">
                     <strong>Never forget DNS!</strong> If you restrict egress, you must explicitly allow UDP/TCP port 53 or your pods cannot resolve service names.
                 </div>
                 <aside class="notes">Egress follows the same structure as ingress. The number one mistake is forgetting DNS -- applications fail silently when they cannot resolve hostnames. Always include DNS as the first egress rule.</aside>
@@ -280,7 +280,7 @@ spec:
                         <p style="font-size: 0.8em; margin-top: 10px;">Covers all ports from 8000 to 9000 inclusive.</p>
                     </div>
                 </div>
-                <div class="concept-box fragment fade-up" style="margin-top: 15px;">
+                <div class="concept-box" style="margin-top: 15px;">
                     <h4>Named Ports</h4>
                     <pre><code class="language-yaml">ports:
   - protocol: TCP
@@ -322,7 +322,7 @@ spec:
   # No egress rules = deny all outbound traffic</code></pre>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Best Practice:</strong> Apply both default-deny policies to every namespace first, then layer on allow rules. Denying egress breaks DNS -- always pair with a DNS allow policy.
                 </div>
                 <aside class="notes">These are the foundational policies. Empty podSelector = all pods. Apply both to every namespace first. Egress deny must be paired with a DNS allow policy or nothing will work.</aside>
@@ -342,7 +342,7 @@ spec:
       ports:
         - { protocol: UDP, port: 53 }
         - { protocol: TCP, port: 53 }</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Tip:</strong> Some teams scope DNS to <code>kube-system</code> only, but allowing any namespace is safer for custom DNS setups.
                 </div>
                 <aside class="notes">This DNS allow policy must accompany default-deny-egress. Without it, pods cannot resolve service names and will fail silently.</aside>
@@ -421,13 +421,13 @@ spec:
                         <tr><th>Feature</th><th>Calico</th><th>Cilium</th><th>AWS VPC CNI</th></tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up"><td>K8s NetworkPolicy</td><td>&#9989;</td><td>&#9989;</td><td>&#9989; (v1.25+)</td></tr>
-                        <tr class="fragment fade-up"><td>Global Policies</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
-                        <tr class="fragment fade-up"><td>L7 Filtering (HTTP)</td><td>&#9989; (Enterprise)</td><td>&#9989;</td><td>&#10060;</td></tr>
-                        <tr class="fragment fade-up"><td>DNS-Based Rules</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
-                        <tr class="fragment fade-up"><td>Host-Level Policies</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
-                        <tr class="fragment fade-up"><td>Encryption (WireGuard)</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
-                        <tr class="fragment fade-up"><td>Flow Logging</td><td>&#9989;</td><td>&#9989; (Hubble)</td><td>VPC Flow Logs</td></tr>
+                        <tr><td>K8s NetworkPolicy</td><td>&#9989;</td><td>&#9989;</td><td>&#9989; (v1.25+)</td></tr>
+                        <tr><td>Global Policies</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
+                        <tr><td>L7 Filtering (HTTP)</td><td>&#9989; (Enterprise)</td><td>&#9989;</td><td>&#10060;</td></tr>
+                        <tr><td>DNS-Based Rules</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
+                        <tr><td>Host-Level Policies</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
+                        <tr><td>Encryption (WireGuard)</td><td>&#9989;</td><td>&#9989;</td><td>&#10060;</td></tr>
+                        <tr><td>Flow Logging</td><td>&#9989;</td><td>&#9989; (Hubble)</td><td>VPC Flow Logs</td></tr>
                     </tbody>
                 </table>
                 <aside class="notes">Standard NetworkPolicy covers L3/L4. Calico and Cilium extend this with their own CRDs. AWS VPC CNI added native support in EKS 1.25.</aside>
@@ -483,7 +483,7 @@ spec:
             http:
               - { method: GET, path: "/api/v1/.*" }
               - { method: POST, path: "/api/v1/orders" }</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>L7 Filtering:</strong> Cilium restricts by HTTP method, path, headers, and gRPC method &mdash; far beyond standard NetworkPolicy.
                 </div>
                 <aside class="notes">Cilium policies operate at the application layer. Instead of just allowing TCP 8080, you specify permitted HTTP methods and paths. A compromised frontend can only call the endpoints it needs.</aside>
@@ -503,7 +503,7 @@ spec:
                     <h4>Zero-Trust Principle</h4>
                     <p><strong>Never trust, always verify.</strong> Every connection is denied unless explicitly permitted, regardless of source location.</p>
                 </div>
-                <div class="three-columns fragment fade-up">
+                <div class="three-columns">
                     <div class="card">
                         <h4>1. Default Deny</h4>
                         <ul>
@@ -570,10 +570,10 @@ ingress:
             <section>
                 <h2>&#128269; Debugging Network Policies</h2>
                 <ul>
-                    <li class="fragment fade-up"><strong>Forgotten DNS:</strong> Egress policies that don't allow port 53 break all name resolution silently</li>
-                    <li class="fragment fade-up"><strong>OR vs AND confusion:</strong> Two selectors in one <code>from:</code> item are AND'd; separate <code>from:</code> items are OR'd</li>
-                    <li class="fragment fade-up"><strong>CNI doesn't enforce:</strong> Some CNI plugins (e.g., Flannel) ignore NetworkPolicy entirely</li>
-                    <li class="fragment fade-up"><strong>Namespace-scoped:</strong> A policy in namespace A cannot affect pods in namespace B</li>
+                    <li><strong>Forgotten DNS:</strong> Egress policies that don't allow port 53 break all name resolution silently</li>
+                    <li><strong>OR vs AND confusion:</strong> Two selectors in one <code>from:</code> item are AND'd; separate <code>from:</code> items are OR'd</li>
+                    <li><strong>CNI doesn't enforce:</strong> Some CNI plugins (e.g., Flannel) ignore NetworkPolicy entirely</li>
+                    <li><strong>Namespace-scoped:</strong> A policy in namespace A cannot affect pods in namespace B</li>
                 </ul>
                 <aside class="notes">DNS breakage is the number one problem. The OR/AND confusion causes subtle security gaps. Always verify CNI enforcement with a connectivity test.</aside>
             </section>
@@ -663,12 +663,12 @@ kubectl exec -it debug-pod -- \
                     <p>Treat network policies as code &mdash; version, review, test, and automate via CI/CD.</p>
                 </div>
                 <ol>
-                    <li class="fragment fade-up"><strong>Observe:</strong> Enable flow logging and map actual traffic patterns</li>
-                    <li class="fragment fade-up"><strong>Draft:</strong> Write policies based on observed flows, store in Git</li>
-                    <li class="fragment fade-up"><strong>Validate:</strong> Lint with <code>kubeval</code> or <code>kubectl --dry-run=server</code></li>
-                    <li class="fragment fade-up"><strong>Test:</strong> Apply in a staging namespace with connectivity tests</li>
-                    <li class="fragment fade-up"><strong>Enforce:</strong> Apply to production with monitoring enabled</li>
-                    <li class="fragment fade-up"><strong>Audit:</strong> Periodically review denied flows and policy coverage</li>
+                    <li><strong>Observe:</strong> Enable flow logging and map actual traffic patterns</li>
+                    <li><strong>Draft:</strong> Write policies based on observed flows, store in Git</li>
+                    <li><strong>Validate:</strong> Lint with <code>kubeval</code> or <code>kubectl --dry-run=server</code></li>
+                    <li><strong>Test:</strong> Apply in a staging namespace with connectivity tests</li>
+                    <li><strong>Enforce:</strong> Apply to production with monitoring enabled</li>
+                    <li><strong>Audit:</strong> Periodically review denied flows and policy coverage</li>
                 </ol>
                 <aside class="notes">Treat policies like application code: version control, PR review, dry-run validation, staging tests, and post-enforcement monitoring.</aside>
             </section>
@@ -706,13 +706,13 @@ kubectl exec -it debug-pod -- \
                 <h2>&#129489;&#8205;&#128187; Lab 8: Network Policies</h2>
                 <h3>Hands-On Exercise</h3>
                 <ul>
-                    <li class="fragment fade-up">Deploy a multi-tier application (frontend, API, database)</li>
-                    <li class="fragment fade-up">Verify default allow &mdash; all pods can reach all pods</li>
-                    <li class="fragment fade-up">Apply default-deny ingress and egress policies</li>
-                    <li class="fragment fade-up">Create targeted allow rules for the three-tier communication path</li>
-                    <li class="fragment fade-up">Apply default-deny egress and allow DNS egress policies</li>
-                    <li class="fragment fade-up">Debug a broken policy (wrong selector and port)</li>
-                    <li class="fragment fade-up">Test cross-namespace isolation</li>
+                    <li>Deploy a multi-tier application (frontend, API, database)</li>
+                    <li>Verify default allow &mdash; all pods can reach all pods</li>
+                    <li>Apply default-deny ingress and egress policies</li>
+                    <li>Create targeted allow rules for the three-tier communication path</li>
+                    <li>Apply default-deny egress and allow DNS egress policies</li>
+                    <li>Debug a broken policy (wrong selector and port)</li>
+                    <li>Test cross-namespace isolation</li>
                 </ul>
                 <div class="highlight-box" style="margin-top: 20px;">
                     <strong>Duration:</strong> ~30-40 minutes
@@ -723,16 +723,16 @@ kubectl exec -it debug-pod -- \
             <!-- Slide 32: Key Takeaways -->
             <section>
                 <h2>&#127919; Key Takeaways</h2>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>1. Default deny is non-negotiable.</strong> Apply default-deny ingress and egress to every namespace.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>2. Always allow DNS.</strong> Every egress policy must include UDP/TCP port 53. This is the most common cause of policy-related outages.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>3. Know your CNI.</strong> Standard NetworkPolicy is L3/L4 only. For L7 filtering, DNS-based rules, or global policies, use Calico or Cilium extensions.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>4. Observe before enforcing.</strong> Enable flow logging and map real traffic before writing policies.
                 </div>
                 <aside class="notes">Four takeaways: default deny is foundational, DNS is the most common pitfall, your CNI determines enforcement capabilities, and observing before enforcing prevents outages.</aside>

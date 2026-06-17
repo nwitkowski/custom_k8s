@@ -96,13 +96,13 @@
             <section>
                 <h2>&#128203; Module Agenda</h2>
                 <ul>
-                    <li class="fragment fade-up">Why Health Checks Matter</li>
-                    <li class="fragment fade-up">Probe Types: Liveness, Readiness, Startup</li>
-                    <li class="fragment fade-up">Probe Configuration &amp; Parameters</li>
-                    <li class="fragment fade-up">HTTP, TCP, Exec, and gRPC Probes</li>
-                    <li class="fragment fade-up">Probe Best Practices &amp; Anti-Patterns</li>
-                    <li class="fragment fade-up">Graceful Shutdown &amp; Pod Disruption Budgets</li>
-                    <li class="fragment fade-up">Debugging Probe Failures</li>
+                    <li>Why Health Checks Matter</li>
+                    <li>Probe Types: Liveness, Readiness, Startup</li>
+                    <li>Probe Configuration &amp; Parameters</li>
+                    <li>HTTP, TCP, Exec, and gRPC Probes</li>
+                    <li>Probe Best Practices &amp; Anti-Patterns</li>
+                    <li>Graceful Shutdown &amp; Pod Disruption Budgets</li>
+                    <li>Debugging Probe Failures</li>
                 </ul>
                 <aside class="notes">We'll cover why probes matter, each probe type with examples, configuration parameters, best practices, and debugging techniques.</aside>
             </section>
@@ -122,11 +122,11 @@
                     <p><strong>Pending</strong> &rarr; <strong>Running</strong> &rarr; <strong>Succeeded</strong> / <strong>Failed</strong></p>
                 </div>
                 <ul>
-                    <li class="fragment fade-up"><strong>Always:</strong> Restart container regardless of exit code (default for Deployments)</li>
-                    <li class="fragment fade-up"><strong>OnFailure:</strong> Restart only on non-zero exit (common for Jobs)</li>
-                    <li class="fragment fade-up"><strong>Never:</strong> Never restart &mdash; let the pod enter Failed state</li>
+                    <li><strong>Always:</strong> Restart container regardless of exit code (default for Deployments)</li>
+                    <li><strong>OnFailure:</strong> Restart only on non-zero exit (common for Jobs)</li>
+                    <li><strong>Never:</strong> Never restart &mdash; let the pod enter Failed state</li>
                 </ul>
-                <div class="fragment fade-up highlight-box warning">
+                <div class="highlight-box warning">
                     <strong>Key Insight:</strong> Restart policies only respond to <em>process exits</em> &mdash; they cannot detect a hung process, a deadlock, or a broken database connection.
                 </div>
                 <aside class="notes">Restart policies only trigger on process exit. If your app is stuck in an infinite loop or can't reach its database, the process is still "running" from Kubernetes' perspective.</aside>
@@ -139,21 +139,21 @@
                     <div class="card">
                         <h4>&#128308; Cascading Failure Scenario</h4>
                         <ol>
-                            <li class="fragment fade-up">App loses database connection</li>
-                            <li class="fragment fade-up">Process stays running, returns 500s</li>
-                            <li class="fragment fade-up">Service keeps routing traffic to unhealthy pod</li>
-                            <li class="fragment fade-up">Users experience errors across the cluster</li>
-                            <li class="fragment fade-up">Load balancer spreads failure further</li>
+                            <li>App loses database connection</li>
+                            <li>Process stays running, returns 500s</li>
+                            <li>Service keeps routing traffic to unhealthy pod</li>
+                            <li>Users experience errors across the cluster</li>
+                            <li>Load balancer spreads failure further</li>
                         </ol>
                     </div>
                     <div class="card">
                         <h4>&#9989; With Probes Configured</h4>
                         <ol>
-                            <li class="fragment fade-up">App loses database connection</li>
-                            <li class="fragment fade-up">Readiness probe fails &rarr; pod removed from Service</li>
-                            <li class="fragment fade-up">Liveness probe fails &rarr; container restarted</li>
-                            <li class="fragment fade-up">Traffic routed only to healthy pods</li>
-                            <li class="fragment fade-up">Self-healing with zero manual intervention</li>
+                            <li>App loses database connection</li>
+                            <li>Readiness probe fails &rarr; pod removed from Service</li>
+                            <li>Liveness probe fails &rarr; container restarted</li>
+                            <li>Traffic routed only to healthy pods</li>
+                            <li>Self-healing with zero manual intervention</li>
                         </ol>
                     </div>
                 </div>
@@ -184,9 +184,9 @@
     periodSeconds: 10
     failureThreshold: 3</code></pre>
                 <ul>
-                    <li class="fragment fade-up">Failure action: <strong>kubelet restarts the container</strong></li>
-                    <li class="fragment fade-up">Use for deadlocks, infinite loops, unrecoverable states</li>
-                    <li class="fragment fade-up">Should check <em>internal</em> health only &mdash; not external dependencies</li>
+                    <li>Failure action: <strong>kubelet restarts the container</strong></li>
+                    <li>Use for deadlocks, infinite loops, unrecoverable states</li>
+                    <li>Should check <em>internal</em> health only &mdash; not external dependencies</li>
                 </ul>
                 <aside class="notes">When a liveness probe fails, kubelet kills and restarts the container. Only check the app's own health -- never external dependencies. If you check a database and the DB goes down, every pod restarts, making things worse.</aside>
             </section>
@@ -236,9 +236,9 @@
     periodSeconds: 5
     failureThreshold: 3</code></pre>
                 <ul>
-                    <li class="fragment fade-up">Failure action: <strong>pod removed from Service endpoints</strong> (not restarted)</li>
-                    <li class="fragment fade-up">Can check downstream dependencies (caches warmed, connections established)</li>
-                    <li class="fragment fade-up">Pod stays running &mdash; can recover and rejoin the Service</li>
+                    <li>Failure action: <strong>pod removed from Service endpoints</strong> (not restarted)</li>
+                    <li>Can check downstream dependencies (caches warmed, connections established)</li>
+                    <li>Pod stays running &mdash; can recover and rejoin the Service</li>
                 </ul>
                 <aside class="notes">When a readiness probe fails, the pod is removed from the Service's endpoint list but stays running. It can recover and rejoin. Unlike liveness probes, readiness probes CAN check external dependencies.</aside>
             </section>
@@ -260,9 +260,9 @@
     httpGet: { path: /healthz, port: 8080 }
     periodSeconds: 10</code></pre>
                 <ul>
-                    <li class="fragment fade-up">Liveness and readiness probes <strong>disabled until startup probe succeeds</strong></li>
-                    <li class="fragment fade-up">Max startup time = <code>failureThreshold &times; periodSeconds</code> (300s above)</li>
-                    <li class="fragment fade-up">Ideal for legacy apps, Java apps with long JVM warmup, ML model loading</li>
+                    <li>Liveness and readiness probes <strong>disabled until startup probe succeeds</strong></li>
+                    <li>Max startup time = <code>failureThreshold &times; periodSeconds</code> (300s above)</li>
+                    <li>Ideal for legacy apps, Java apps with long JVM warmup, ML model loading</li>
                 </ul>
                 <aside class="notes">Startup probes give a generous window for initialization but fast failure detection once running. Here the app gets up to 300 seconds to start, but once running, liveness checks happen every 10 seconds.</aside>
             </section>
@@ -312,7 +312,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="fragment fade-up highlight-box success">
+                <div class="highlight-box success">
                     <strong>Recommended:</strong> Use all three probes together. Startup handles initialization, liveness catches deadlocks, readiness controls traffic flow.
                 </div>
                 <aside class="notes">Key difference: liveness and startup kill the container, readiness just removes it from traffic rotation. Liveness and readiness probes don't activate until the startup probe succeeds.</aside>
@@ -364,7 +364,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="fragment fade-up highlight-box">
+                <div class="highlight-box">
                     <strong>Time to failure:</strong> <code>initialDelaySeconds + (periodSeconds &times; failureThreshold)</code> &mdash; e.g., 15 + (10 &times; 3) = <strong>45 seconds</strong> before restart.
                 </div>
                 <aside class="notes">With defaults, it takes 30 seconds of failed probes before a restart. For liveness probes, successThreshold must be 1 (enforced by Kubernetes). Readiness probes can require multiple consecutive successes.</aside>
@@ -387,11 +387,11 @@
   periodSeconds: 10
   timeoutSeconds: 3</code></pre>
                 <ul>
-                    <li class="fragment fade-up"><strong>Success:</strong> HTTP status code &ge; 200 and &lt; 400</li>
-                    <li class="fragment fade-up"><strong>port:</strong> Container port number or named port reference</li>
-                    <li class="fragment fade-up"><strong>scheme:</strong> HTTP (default) or HTTPS &mdash; does <em>not</em> verify certificates</li>
-                    <li class="fragment fade-up"><strong>httpHeaders:</strong> Custom headers for auth or routing</li>
-                    <li class="fragment fade-up"><strong>path:</strong> Dedicated health endpoint, not a business endpoint</li>
+                    <li><strong>Success:</strong> HTTP status code &ge; 200 and &lt; 400</li>
+                    <li><strong>port:</strong> Container port number or named port reference</li>
+                    <li><strong>scheme:</strong> HTTP (default) or HTTPS &mdash; does <em>not</em> verify certificates</li>
+                    <li><strong>httpHeaders:</strong> Custom headers for auth or routing</li>
+                    <li><strong>path:</strong> Dedicated health endpoint, not a business endpoint</li>
                 </ul>
                 <aside class="notes">Kubelet makes an HTTP GET request. Any 2xx or 3xx = success; 4xx and 5xx = failure. HTTPS skips certificate validation, so self-signed certs work.</aside>
             </section>
@@ -442,10 +442,10 @@
       periodSeconds: 15
       timeoutSeconds: 5</code></pre>
                 <ul>
-                    <li class="fragment fade-up"><strong>Exit code 0</strong> = success, any other code = failure</li>
-                    <li class="fragment fade-up">Runs <em>inside</em> the container &mdash; must have required binaries</li>
-                    <li class="fragment fade-up">Useful for custom checks: file existence, process state, script validation</li>
-                    <li class="fragment fade-up">Each exec probe creates a process &mdash; watch for <strong>PID pressure</strong> in high-frequency probes</li>
+                    <li><strong>Exit code 0</strong> = success, any other code = failure</li>
+                    <li>Runs <em>inside</em> the container &mdash; must have required binaries</li>
+                    <li>Useful for custom checks: file existence, process state, script validation</li>
+                    <li>Each exec probe creates a process &mdash; watch for <strong>PID pressure</strong> in high-frequency probes</li>
                 </ul>
                 <aside class="notes">Exec probes run any command inside the container. This example checks a file exists and was modified within the last minute. Be aware exec probes spawn a process each time, so low periodSeconds can cause PID exhaustion.</aside>
             </section>
@@ -458,9 +458,9 @@
                     <p>Kubernetes can natively call the <strong>gRPC Health Checking Protocol</strong> without needing a sidecar or exec workaround.</p>
                 </div>
                 <ul>
-                    <li class="fragment fade-up"><strong>service:</strong> Optional &mdash; specifies which gRPC service to check (empty = overall status)</li>
-                    <li class="fragment fade-up">App must implement the <code>grpc.health.v1.Health</code> service</li>
-                    <li class="fragment fade-up">Returns <code>SERVING</code>, <code>NOT_SERVING</code>, or <code>UNKNOWN</code></li>
+                    <li><strong>service:</strong> Optional &mdash; specifies which gRPC service to check (empty = overall status)</li>
+                    <li>App must implement the <code>grpc.health.v1.Health</code> service</li>
+                    <li>Returns <code>SERVING</code>, <code>NOT_SERVING</code>, or <code>UNKNOWN</code></li>
                 </ul>
                 <h4>Configuration</h4>
                 <pre><code class="language-yaml">livenessProbe:
@@ -521,25 +521,25 @@ readinessProbe:
                     <div>
                         <h4>&#128154; Liveness Probe Rules</h4>
                         <ul>
-                            <li class="fragment fade-up">Check only <em>internal</em> application state</li>
-                            <li class="fragment fade-up">Keep it lightweight (&lt; 100ms)</li>
-                            <li class="fragment fade-up">Use generous thresholds (<code>failureThreshold: 3+</code>)</li>
-                            <li class="fragment fade-up">Never call external services</li>
-                            <li class="fragment fade-up">Consider: "Would a restart fix this?"</li>
+                            <li>Check only <em>internal</em> application state</li>
+                            <li>Keep it lightweight (&lt; 100ms)</li>
+                            <li>Use generous thresholds (<code>failureThreshold: 3+</code>)</li>
+                            <li>Never call external services</li>
+                            <li>Consider: "Would a restart fix this?"</li>
                         </ul>
                     </div>
                     <div>
                         <h4>&#128309; Readiness Probe Rules</h4>
                         <ul>
-                            <li class="fragment fade-up">Check dependencies if needed</li>
-                            <li class="fragment fade-up">Verify cache is warmed</li>
-                            <li class="fragment fade-up">Can be more thorough than liveness</li>
-                            <li class="fragment fade-up">Consider: "Can I serve a good response?"</li>
-                            <li class="fragment fade-up">Use <code>successThreshold: 2+</code> to avoid flapping</li>
+                            <li>Check dependencies if needed</li>
+                            <li>Verify cache is warmed</li>
+                            <li>Can be more thorough than liveness</li>
+                            <li>Consider: "Can I serve a good response?"</li>
+                            <li>Use <code>successThreshold: 2+</code> to avoid flapping</li>
                         </ul>
                     </div>
                 </div>
-                <div class="fragment fade-up key-point">
+                <div class="key-point">
                     <strong>Golden Rule:</strong> Liveness answers "should I restart?" &mdash; Readiness answers "should I receive traffic?"
                 </div>
                 <aside class="notes">Use different endpoints: /healthz for liveness (internal state), /ready for readiness (downstream connectivity). Liveness returns 200 if the event loop is responsive; readiness checks connection pool and cache state.</aside>
@@ -583,8 +583,8 @@ readinessProbe:
       service: "orders"
     periodSeconds: 5</code></pre>
                 <ul>
-                    <li class="fragment fade-up"><strong>Liveness:</strong> Checks the gRPC server is responsive (overall status)</li>
-                    <li class="fragment fade-up"><strong>Readiness:</strong> Checks the specific "orders" service is ready to handle requests</li>
+                    <li><strong>Liveness:</strong> Checks the gRPC server is responsive (overall status)</li>
+                    <li><strong>Readiness:</strong> Checks the specific "orders" service is ready to handle requests</li>
                 </ul>
                 <aside class="notes">Liveness checks overall server responsiveness; readiness checks the specific "orders" service.</aside>
             </section>
@@ -605,9 +605,9 @@ readinessProbe:
         "psql -h 127.0.0.1 -p 6432 -U probe -c 'SELECT 1'"]
     periodSeconds: 10</code></pre>
                 <ul>
-                    <li class="fragment fade-up"><strong>Liveness (TCP):</strong> Is PgBouncer listening on port 6432?</li>
-                    <li class="fragment fade-up"><strong>Readiness (Exec):</strong> Can it actually execute a query end-to-end?</li>
-                    <li class="fragment fade-up">This layered approach catches both process-level and application-level failures</li>
+                    <li><strong>Liveness (TCP):</strong> Is PgBouncer listening on port 6432?</li>
+                    <li><strong>Readiness (Exec):</strong> Can it actually execute a query end-to-end?</li>
+                    <li>This layered approach catches both process-level and application-level failures</li>
                 </ul>
                 <aside class="notes">TCP for liveness (is PgBouncer listening?) and exec for readiness (can it execute a query?). Layered approach catches both process and application failures.</aside>
             </section>
@@ -640,9 +640,9 @@ kubectl exec my-app -- wget -qO- http://localhost:8080/ready</code></pre>
                     <p><strong>1.</strong> Pod set to Terminating &rarr; <strong>2.</strong> preStop hook runs &rarr; <strong>3.</strong> SIGTERM sent &rarr; <strong>4.</strong> Grace period countdown &rarr; <strong>5.</strong> SIGKILL if still running</p>
                 </div>
                 <ul>
-                    <li class="fragment fade-up"><strong>preStop + SIGTERM:</strong> Happen concurrently with endpoint removal from Services</li>
-                    <li class="fragment fade-up"><strong>Race condition:</strong> Add a <code>sleep 5</code> in preStop to let endpoints propagate</li>
-                    <li class="fragment fade-up"><strong>terminationGracePeriodSeconds:</strong> Must exceed preStop + drain time</li>
+                    <li><strong>preStop + SIGTERM:</strong> Happen concurrently with endpoint removal from Services</li>
+                    <li><strong>Race condition:</strong> Add a <code>sleep 5</code> in preStop to let endpoints propagate</li>
+                    <li><strong>terminationGracePeriodSeconds:</strong> Must exceed preStop + drain time</li>
                 </ul>
                 <h4>preStop Hook</h4>
                 <pre><code class="language-yaml">terminationGracePeriodSeconds: 60
@@ -696,11 +696,11 @@ spec:
             <section>
                 <h2>&#128737;&#65039; PDB Behavior &amp; Interactions</h2>
                 <ul>
-                    <li class="fragment fade-up">Works with <code>kubectl drain</code>, cluster autoscaler, and upgrade controllers</li>
-                    <li class="fragment fade-up">Does <strong>not</strong> protect against involuntary disruptions (node crashes, OOM kills)</li>
-                    <li class="fragment fade-up">Combine with readiness probes &mdash; unready pods count as unavailable</li>
+                    <li>Works with <code>kubectl drain</code>, cluster autoscaler, and upgrade controllers</li>
+                    <li>Does <strong>not</strong> protect against involuntary disruptions (node crashes, OOM kills)</li>
+                    <li>Combine with readiness probes &mdash; unready pods count as unavailable</li>
                 </ul>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Probe interaction:</strong> A pod that fails its readiness probe counts as unavailable, which can block further voluntary disruptions. Always consider PDB + readiness probe behavior together.
                 </div>
                 <aside class="notes">A pod failing its readiness probe counts as unavailable, which can block further voluntary disruptions.</aside>
@@ -766,33 +766,33 @@ containers:
                     <div class="card">
                         <h4>&#128308; CrashLoopBackOff</h4>
                         <ul>
-                            <li class="fragment fade-up">OOMKilled &mdash; memory limit exceeded</li>
-                            <li class="fragment fade-up">Missing dependencies or binaries</li>
-                            <li class="fragment fade-up">Configuration errors at startup</li>
+                            <li>OOMKilled &mdash; memory limit exceeded</li>
+                            <li>Missing dependencies or binaries</li>
+                            <li>Configuration errors at startup</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>&#128308; ImagePullBackOff</h4>
                         <ul>
-                            <li class="fragment fade-up">Wrong image name or tag</li>
-                            <li class="fragment fade-up">ECR auth failure or expired token</li>
-                            <li class="fragment fade-up">Registry unreachable from EKS nodes</li>
+                            <li>Wrong image name or tag</li>
+                            <li>ECR auth failure or expired token</li>
+                            <li>Registry unreachable from EKS nodes</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>&#128308; Pending Pods</h4>
                         <ul>
-                            <li class="fragment fade-up">Insufficient CPU/memory on nodes</li>
-                            <li class="fragment fade-up">Node affinity or taint mismatch</li>
-                            <li class="fragment fade-up">PVC stuck in pending (EBS not bound)</li>
+                            <li>Insufficient CPU/memory on nodes</li>
+                            <li>Node affinity or taint mismatch</li>
+                            <li>PVC stuck in pending (EBS not bound)</li>
                         </ul>
                     </div>
                 </div>
                 <div class="two-columns" style="margin-top: 0.5em;">
-                    <div class="highlight-box warning fragment fade-up">
+                    <div class="highlight-box warning">
                         <strong>CreateContainerConfigError:</strong> Missing ConfigMap or Secret referenced by the pod spec &mdash; container never starts.
                     </div>
-                    <div class="highlight-box danger fragment fade-up">
+                    <div class="highlight-box danger">
                         <strong>OOMKilled:</strong> Container exceeded its memory limit. Increase <code>resources.limits.memory</code> or fix the memory leak.
                     </div>
                 </div>
@@ -823,7 +823,7 @@ kubectl top node    # CPU/memory per node
 
 # Cluster events sorted by time
 kubectl get events --sort-by=.lastTimestamp -n &lt;namespace&gt;</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Workflow:</strong> Events &#10132; Describe &#10132; Logs &#10132; Exec/Debug &#10132; Top
                 </div>
                 <aside class="notes">Start with events, then describe, then logs (--previous for crashed containers). Exec into running containers or use kubectl debug for distroless images. kubectl top shows real-time resource consumption for diagnosing OOMKilled and CPU throttling.</aside>
@@ -837,11 +837,11 @@ kubectl get events --sort-by=.lastTimestamp -n &lt;namespace&gt;</code></pre>
                         <tr><th>Symptom</th><th>First Command</th><th>What to Look For</th></tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up"><td>Pod stuck <strong>Pending</strong></td><td><code>kubectl describe pod</code></td><td>Events: FailedScheduling, resource requests, node selectors</td></tr>
-                        <tr class="fragment fade-up"><td>Pod in <strong>CrashLoopBackOff</strong></td><td><code>kubectl logs --previous</code></td><td>Stack traces, missing env vars, exit code (137=OOM, 1=app error)</td></tr>
-                        <tr class="fragment fade-up"><td><strong>ImagePullBackOff</strong></td><td><code>kubectl describe pod</code></td><td>Events: image name typo, 401/403 from ECR, ImagePullSecrets</td></tr>
-                        <tr class="fragment fade-up"><td>Pod <strong>Running</strong> but not working</td><td><code>kubectl exec</code> + <code>logs</code></td><td>App-level errors, connectivity to services, DNS resolution</td></tr>
-                        <tr class="fragment fade-up"><td>High latency / restarts</td><td><code>kubectl top pod</code></td><td>CPU throttling (near limit), memory creeping toward limit</td></tr>
+                        <tr><td>Pod stuck <strong>Pending</strong></td><td><code>kubectl describe pod</code></td><td>Events: FailedScheduling, resource requests, node selectors</td></tr>
+                        <tr><td>Pod in <strong>CrashLoopBackOff</strong></td><td><code>kubectl logs --previous</code></td><td>Stack traces, missing env vars, exit code (137=OOM, 1=app error)</td></tr>
+                        <tr><td><strong>ImagePullBackOff</strong></td><td><code>kubectl describe pod</code></td><td>Events: image name typo, 401/403 from ECR, ImagePullSecrets</td></tr>
+                        <tr><td>Pod <strong>Running</strong> but not working</td><td><code>kubectl exec</code> + <code>logs</code></td><td>App-level errors, connectivity to services, DNS resolution</td></tr>
+                        <tr><td>High latency / restarts</td><td><code>kubectl top pod</code></td><td>CPU throttling (near limit), memory creeping toward limit</td></tr>
                     </tbody>
                 </table>
                 <aside class="notes">Exit codes: 137 = OOMKilled, 1 = app error, 143 = SIGTERM (often a failed liveness probe). For EKS, also check node IAM role ECR permissions and VPC networking.</aside>
@@ -869,15 +869,15 @@ kubectl get events --sort-by=.lastTimestamp -n &lt;namespace&gt;</code></pre>
             <section>
                 <h2>&#127919; Key Takeaways</h2>
                 <ul>
-                    <li class="fragment fade-up"><strong>Liveness probes</strong> detect stuck containers and trigger restarts &mdash; never check external dependencies</li>
-                    <li class="fragment fade-up"><strong>Readiness probes</strong> control traffic routing &mdash; can and should check if the app can serve good responses</li>
-                    <li class="fragment fade-up"><strong>Startup probes</strong> protect slow-starting apps from premature liveness kills</li>
-                    <li class="fragment fade-up"><strong>Probe protocols</strong> include HTTP, TCP, gRPC, and exec for different workload types</li>
-                    <li class="fragment fade-up"><strong>Use all three together</strong> for comprehensive health management</li>
-                    <li class="fragment fade-up"><strong>Tune parameters carefully</strong> &mdash; too aggressive causes flapping, too relaxed delays recovery</li>
-                    <li class="fragment fade-up"><strong>Graceful shutdown</strong> requires coordination between preStop hooks, SIGTERM handling, and PDBs</li>
-                    <li class="fragment fade-up"><strong>Recognize failure states:</strong> CrashLoopBackOff, ImagePullBackOff, Pending, OOMKilled</li>
-                    <li class="fragment fade-up"><strong>Systematic debugging:</strong> Events &rarr; Describe &rarr; Logs &rarr; Exec/Debug &rarr; Top</li>
+                    <li><strong>Liveness probes</strong> detect stuck containers and trigger restarts &mdash; never check external dependencies</li>
+                    <li><strong>Readiness probes</strong> control traffic routing &mdash; can and should check if the app can serve good responses</li>
+                    <li><strong>Startup probes</strong> protect slow-starting apps from premature liveness kills</li>
+                    <li><strong>Probe protocols</strong> include HTTP, TCP, gRPC, and exec for different workload types</li>
+                    <li><strong>Use all three together</strong> for comprehensive health management</li>
+                    <li><strong>Tune parameters carefully</strong> &mdash; too aggressive causes flapping, too relaxed delays recovery</li>
+                    <li><strong>Graceful shutdown</strong> requires coordination between preStop hooks, SIGTERM handling, and PDBs</li>
+                    <li><strong>Recognize failure states:</strong> CrashLoopBackOff, ImagePullBackOff, Pending, OOMKilled</li>
+                    <li><strong>Systematic debugging:</strong> Events &rarr; Describe &rarr; Logs &rarr; Exec/Debug &rarr; Top</li>
                 </ul>
                 <aside class="notes">The three probe types work best together. Most common mistake: checking dependencies in liveness probes. Tune parameters based on actual app behavior, and always implement graceful shutdown.</aside>
             </section>

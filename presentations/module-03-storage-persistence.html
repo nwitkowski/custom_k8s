@@ -122,7 +122,7 @@
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Goal:</strong> Understand when and how to persist data in Kubernetes, and choose the right storage abstraction for your workload.
                 </div>
                 <aside class="notes">We start with the foundational storage model and work up to real-world patterns covering PVC provisioning, StatefulSets, and AWS-native storage on EKS.</aside>
@@ -139,12 +139,12 @@
             <section>
                 <h2>&#128163; Containers Are Ephemeral</h2>
                 <ul>
-                    <li class="fragment fade-up">Every container starts with a <strong>fresh filesystem</strong> from its image layers</li>
-                    <li class="fragment fade-up">Writes go to a <strong>writable container layer</strong> (copy-on-write)</li>
-                    <li class="fragment fade-up">When the container restarts, <strong>all writes are lost</strong></li>
-                    <li class="fragment fade-up">Pod rescheduling to a different node = completely new filesystem</li>
+                    <li>Every container starts with a <strong>fresh filesystem</strong> from its image layers</li>
+                    <li>Writes go to a <strong>writable container layer</strong> (copy-on-write)</li>
+                    <li>When the container restarts, <strong>all writes are lost</strong></li>
+                    <li>Pod rescheduling to a different node = completely new filesystem</li>
                 </ul>
-                <div class="highlight-box danger fragment fade-up">
+                <div class="highlight-box danger">
                     <strong>This means:</strong> Logs written to disk, temp files, cached data, database files — all gone when a pod restarts. This is by design, not a bug.
                 </div>
                 <aside class="notes">Key mental model shift: on a VM, disk persists across reboots. On Kubernetes, pods can be killed and rescheduled at any time, resetting the filesystem. Stateful apps require explicit storage configuration.</aside>
@@ -176,7 +176,7 @@
                         </ul>
                     </div>
                 </div>
-                <div class="concept-box fragment fade-up">
+                <div class="concept-box">
                     <h4>The Rule of Thumb</h4>
                     <p>If your workload writes data that must survive a pod restart, you need persistent storage. If it only reads data or writes ephemeral data, the default model works fine.</p>
                 </div>
@@ -189,12 +189,12 @@
                 <div class="concept-box">
                     <h4>Three Layers of Storage Abstraction</h4>
                     <ul>
-                        <li class="fragment fade-up"><strong>Volume</strong> — a directory accessible to containers in a pod; lifecycle tied to the pod</li>
-                        <li class="fragment fade-up"><strong>PersistentVolume (PV)</strong> — a cluster-level storage resource with its own lifecycle, independent of any pod</li>
-                        <li class="fragment fade-up"><strong>PersistentVolumeClaim (PVC)</strong> — a developer's request for storage; binds to a PV</li>
+                        <li><strong>Volume</strong> — a directory accessible to containers in a pod; lifecycle tied to the pod</li>
+                        <li><strong>PersistentVolume (PV)</strong> — a cluster-level storage resource with its own lifecycle, independent of any pod</li>
+                        <li><strong>PersistentVolumeClaim (PVC)</strong> — a developer's request for storage; binds to a PV</li>
                     </ul>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Analogy:</strong> PV = the actual hard drive provisioned by the platform team. PVC = a ticket requesting "I need 10Gi of fast storage." Kubernetes matches claims to volumes automatically.
                 </div>
                 <aside class="notes">Platform teams manage PVs and StorageClasses. Developers create PVCs. The control plane handles binding — the same producer-consumer pattern seen throughout Kubernetes.</aside>
@@ -278,10 +278,10 @@ spec:
     volumeHandle: vol-0abc123def456789
     fsType: ext4</code></pre>
                 <ul>
-                    <li class="fragment fade-up"><strong>capacity</strong> — how much storage the volume provides</li>
-                    <li class="fragment fade-up"><strong>accessModes</strong> — who can mount and how (RWO, ROX, RWX)</li>
-                    <li class="fragment fade-up"><strong>reclaimPolicy</strong> — what happens when the PVC is deleted</li>
-                    <li class="fragment fade-up"><strong>storageClassName</strong> — links to a StorageClass for dynamic provisioning</li>
+                    <li><strong>capacity</strong> — how much storage the volume provides</li>
+                    <li><strong>accessModes</strong> — who can mount and how (RWO, ROX, RWX)</li>
+                    <li><strong>reclaimPolicy</strong> — what happens when the PVC is deleted</li>
+                    <li><strong>storageClassName</strong> — links to a StorageClass for dynamic provisioning</li>
                 </ul>
                 <aside class="notes">PVs are cluster-scoped. You'll rarely create them manually — dynamic provisioning handles that — but understanding the PV spec is essential for troubleshooting.</aside>
             </section>
@@ -301,7 +301,7 @@ spec:
   resources:
     requests:
       storage: 50Gi</code></pre>
-                <pre class="fragment fade-up"><code class="language-yaml"># Reference in a Pod spec
+                <pre><code class="language-yaml"># Reference in a Pod spec
 spec:
   containers:
   - name: postgres
@@ -322,14 +322,14 @@ spec:
                 <div class="concept-box">
                     <h4>How PVCs Find Their PVs</h4>
                     <ol>
-                        <li class="fragment fade-up"><strong>Pending</strong> — PVC created, waiting for a matching PV</li>
-                        <li class="fragment fade-up"><strong>Bound</strong> — PVC matched to a PV (by size, access mode, StorageClass)</li>
-                        <li class="fragment fade-up"><strong>In Use</strong> — Pod mounts the PVC; volume is attached to the node</li>
-                        <li class="fragment fade-up"><strong>Released</strong> — Pod deleted, PVC deleted; PV enters Released state</li>
-                        <li class="fragment fade-up"><strong>Reclaimed</strong> — PV is deleted, retained, or recycled per reclaim policy</li>
+                        <li><strong>Pending</strong> — PVC created, waiting for a matching PV</li>
+                        <li><strong>Bound</strong> — PVC matched to a PV (by size, access mode, StorageClass)</li>
+                        <li><strong>In Use</strong> — Pod mounts the PVC; volume is attached to the node</li>
+                        <li><strong>Released</strong> — Pod deleted, PVC deleted; PV enters Released state</li>
+                        <li><strong>Reclaimed</strong> — PV is deleted, retained, or recycled per reclaim policy</li>
                     </ol>
                 </div>
-                <pre class="fragment fade-up"><code class="language-bash"># Inspect PVC status
+                <pre><code class="language-bash"># Inspect PVC status
 kubectl get pvc postgres-data
 # NAME            STATUS   VOLUME     CAPACITY   ACCESS MODES   STORAGECLASS
 # postgres-data   Bound    pvc-a1b2   50Gi       RWO            gp3
@@ -430,10 +430,10 @@ reclaimPolicy: Retain
 allowVolumeExpansion: true
 volumeBindingMode: WaitForFirstConsumer</code></pre>
                 <ul>
-                    <li class="fragment fade-up"><strong>provisioner</strong> — which CSI driver creates the volumes</li>
-                    <li class="fragment fade-up"><strong>parameters</strong> — passed to the provisioner (EBS type, encryption, etc.)</li>
-                    <li class="fragment fade-up"><strong>volumeBindingMode</strong> — <code>WaitForFirstConsumer</code> delays binding until a pod is scheduled (AZ-aware)</li>
-                    <li class="fragment fade-up"><strong>allowVolumeExpansion</strong> — enables online resizing of PVCs</li>
+                    <li><strong>provisioner</strong> — which CSI driver creates the volumes</li>
+                    <li><strong>parameters</strong> — passed to the provisioner (EBS type, encryption, etc.)</li>
+                    <li><strong>volumeBindingMode</strong> — <code>WaitForFirstConsumer</code> delays binding until a pod is scheduled (AZ-aware)</li>
+                    <li><strong>allowVolumeExpansion</strong> — enables online resizing of PVCs</li>
                 </ul>
                 <aside class="notes">WaitForFirstConsumer is essential on EKS. EBS volumes are AZ-specific — this mode ensures the volume is created in the same AZ as the scheduled pod.</aside>
             </section>
@@ -490,7 +490,7 @@ parameters:
   directoryPerms: "700"
   # ... gidRangeStart, gidRangeEnd
 mountOptions: [tls]</code></pre>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="highlight-box success">
                         <strong>EFS Strengths:</strong> ReadWriteMany, auto-scaling capacity, cross-AZ, shared access across pods and nodes
                     </div>
@@ -507,15 +507,15 @@ mountOptions: [tls]</code></pre>
                 <div class="concept-box">
                     <h4>What Happens When You Create a PVC</h4>
                     <ol>
-                        <li class="fragment fade-up">Developer creates a <strong>PVC</strong> referencing a StorageClass</li>
-                        <li class="fragment fade-up">PVC stays <strong>Pending</strong> (WaitForFirstConsumer mode)</li>
-                        <li class="fragment fade-up">Pod is created referencing the PVC; scheduler places the pod on a node</li>
-                        <li class="fragment fade-up">StorageClass provisioner <strong>creates the volume</strong> in the correct AZ</li>
-                        <li class="fragment fade-up">A <strong>PV is automatically created</strong> and bound to the PVC</li>
-                        <li class="fragment fade-up">The volume is <strong>attached</strong> to the node and <strong>mounted</strong> into the pod</li>
+                        <li>Developer creates a <strong>PVC</strong> referencing a StorageClass</li>
+                        <li>PVC stays <strong>Pending</strong> (WaitForFirstConsumer mode)</li>
+                        <li>Pod is created referencing the PVC; scheduler places the pod on a node</li>
+                        <li>StorageClass provisioner <strong>creates the volume</strong> in the correct AZ</li>
+                        <li>A <strong>PV is automatically created</strong> and bound to the PVC</li>
+                        <li>The volume is <strong>attached</strong> to the node and <strong>mounted</strong> into the pod</li>
                     </ol>
                 </div>
-                <pre class="fragment fade-up"><code class="language-bash"># Watch the provisioning happen in real time
+                <pre><code class="language-bash"># Watch the provisioning happen in real time
 kubectl get pvc -w
 kubectl get pv
 kubectl describe pvc my-claim  # Check events for provisioning status</code></pre>
@@ -561,7 +561,7 @@ kubectl describe pvc my-claim  # Check events for provisioning status</code></pr
                         </tr>
                     </tbody>
                 </table>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Decision rule:</strong> If one pod writes, use EBS. If multiple pods need concurrent read-write access, use EFS.
                 </div>
                 <aside class="notes">EBS is the right default for most stateful workloads. EFS fills the shared-storage niche. Common mistake: using EFS for databases — it lacks the IOPS and latency profile databases need.</aside>
@@ -597,7 +597,7 @@ kubectl describe pvc my-claim  # Check events for provisioning status</code></pr
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Key distinction:</strong> Use a Deployment unless your workload requires stable identity, ordered operations, or per-replica persistent storage. Most workloads are Deployments.
                 </div>
                 <aside class="notes">In a Deployment, pods are interchangeable. In a StatefulSet, each pod has a unique identity, stable hostname, and its own volume. Databases need this — replica-0 is the primary, others are secondaries.</aside>
@@ -640,7 +640,7 @@ spec:
     app: postgres
   ports:
   - port: 5432</code></pre>
-                <div class="concept-box fragment fade-up">
+                <div class="concept-box">
                     <h4>DNS Records Created</h4>
                     <ul>
                         <li><code>postgres-0.postgres-headless.my-ns.svc.cluster.local</code></li>
@@ -648,7 +648,7 @@ spec:
                         <li><code>postgres-2.postgres-headless.my-ns.svc.cluster.local</code></li>
                     </ul>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Why this matters:</strong> Applications can connect to a specific replica by name. The primary can always be reached at <code>postgres-0</code>, regardless of which node it runs on.
                 </div>
                 <aside class="notes">clusterIP: None means DNS returns individual pod IPs instead of a virtual IP. The primary is always postgres-0, reachable by stable DNS name regardless of which node it runs on.</aside>
@@ -662,7 +662,7 @@ spec:
                     <p>Each StatefulSet replica gets its own PVC, named using the pattern:</p>
                     <p><code>&lt;volumeClaimTemplate name&gt;-&lt;statefulset name&gt;-&lt;ordinal&gt;</code></p>
                 </div>
-                <pre class="fragment fade-up"><code class="language-bash"># For a StatefulSet named "postgres" with 3 replicas:
+                <pre><code class="language-bash"># For a StatefulSet named "postgres" with 3 replicas:
 kubectl get pvc
 # NAME              STATUS   VOLUME     CAPACITY   STORAGECLASS
 # data-postgres-0   Bound    pvc-aaa    50Gi       gp3
@@ -766,7 +766,7 @@ spec:
                     <h4>Why Use an Operator Instead of Raw StatefulSets?</h4>
                     <p>A raw StatefulSet gives you storage and identity. An operator adds the operational logic databases need to run reliably.</p>
                 </div>
-                <div class="three-columns fragment fade-up">
+                <div class="three-columns">
                     <div class="card">
                         <h4>CloudNativePG</h4>
                         <ul>
@@ -819,7 +819,7 @@ metadata: { name: ebs-snapclass }
 driver: ebs.csi.aws.com
 deletionPolicy: Retain</code></pre>
                 <h4>Create Snapshot</h4>
-                <pre class="fragment fade-up"><code class="language-yaml"># VolumeSnapshot — take a snapshot of a PVC
+                <pre><code class="language-yaml"># VolumeSnapshot — take a snapshot of a PVC
 kind: VolumeSnapshot
 metadata: { name: postgres-snap-20260313 }
 spec:
@@ -827,7 +827,7 @@ spec:
   source:
     persistentVolumeClaimName: data-postgres-0</code></pre>
                 <h4>Restore from Snapshot</h4>
-                <pre class="fragment fade-up"><code class="language-yaml"># Restore from snapshot — create a new PVC with dataSource
+                <pre><code class="language-yaml"># Restore from snapshot — create a new PVC with dataSource
 kind: PersistentVolumeClaim
 metadata: { name: postgres-restored }
 spec:
@@ -848,21 +848,21 @@ spec:
                     <div class="card">
                         <h4>Configuration</h4>
                         <ul>
-                            <li class="fragment fade-up">Use <code>gp3</code> as the default StorageClass</li>
-                            <li class="fragment fade-up">Always set <code>WaitForFirstConsumer</code> binding mode</li>
-                            <li class="fragment fade-up">Enable <code>allowVolumeExpansion</code></li>
-                            <li class="fragment fade-up">Encrypt all volumes (<code>encrypted: "true"</code>)</li>
-                            <li class="fragment fade-up">Set <code>Retain</code> reclaim policy for stateful workloads</li>
+                            <li>Use <code>gp3</code> as the default StorageClass</li>
+                            <li>Always set <code>WaitForFirstConsumer</code> binding mode</li>
+                            <li>Enable <code>allowVolumeExpansion</code></li>
+                            <li>Encrypt all volumes (<code>encrypted: "true"</code>)</li>
+                            <li>Set <code>Retain</code> reclaim policy for stateful workloads</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>Operations</h4>
                         <ul>
-                            <li class="fragment fade-up">Monitor PVC usage with Prometheus metrics</li>
-                            <li class="fragment fade-up">Automate volume snapshots for backups</li>
-                            <li class="fragment fade-up">Use operators for database workloads</li>
-                            <li class="fragment fade-up">Test failover and recovery procedures</li>
-                            <li class="fragment fade-up">Tag EBS volumes for cost allocation</li>
+                            <li>Monitor PVC usage with Prometheus metrics</li>
+                            <li>Automate volume snapshots for backups</li>
+                            <li>Use operators for database workloads</li>
+                            <li>Test failover and recovery procedures</li>
+                            <li>Tag EBS volumes for cost allocation</li>
                         </ul>
                     </div>
                 </div>
@@ -934,13 +934,13 @@ spec:
                 <h2>&#128218; Module 3 — Key Takeaways</h2>
                 <div class="concept-box">
                     <ul>
-                        <li class="fragment fade-up"><strong>Kubernetes storage is ephemeral by default</strong> — persistence requires explicit configuration via PVs and PVCs</li>
-                        <li class="fragment fade-up"><strong>PVC is the developer interface</strong> — declare what you need, let the platform provision it</li>
-                        <li class="fragment fade-up"><strong>StorageClasses enable self-service</strong> — dynamic provisioning eliminates manual volume management</li>
-                        <li class="fragment fade-up"><strong>EBS = single-writer, EFS = shared storage</strong> — choose based on access pattern</li>
-                        <li class="fragment fade-up"><strong>StatefulSets provide stable identity</strong> — ordered operations, persistent names, per-replica storage</li>
-                        <li class="fragment fade-up"><strong>Use operators for databases</strong> — they encode operational expertise as code</li>
-                        <li class="fragment fade-up"><strong>Always set Retain reclaim policy</strong> — protect against accidental data loss</li>
+                        <li><strong>Kubernetes storage is ephemeral by default</strong> — persistence requires explicit configuration via PVs and PVCs</li>
+                        <li><strong>PVC is the developer interface</strong> — declare what you need, let the platform provision it</li>
+                        <li><strong>StorageClasses enable self-service</strong> — dynamic provisioning eliminates manual volume management</li>
+                        <li><strong>EBS = single-writer, EFS = shared storage</strong> — choose based on access pattern</li>
+                        <li><strong>StatefulSets provide stable identity</strong> — ordered operations, persistent names, per-replica storage</li>
+                        <li><strong>Use operators for databases</strong> — they encode operational expertise as code</li>
+                        <li><strong>Always set Retain reclaim policy</strong> — protect against accidental data loss</li>
                     </ul>
                 </div>
                 <aside class="notes">Core mental model: developers declare intent via PVCs, the platform fulfills it via PVs, StorageClasses, and CSI drivers.</aside>

@@ -99,18 +99,18 @@
                     <div class="card">
                         <h4>Core Concepts</h4>
                         <ul>
-                            <li class="fragment fade-up">Why Services matter</li>
-                            <li class="fragment fade-up">Service types: ClusterIP, NodePort, LoadBalancer, ExternalName</li>
-                            <li class="fragment fade-up">Selectors, Endpoints, and EndpointSlices</li>
+                            <li>Why Services matter</li>
+                            <li>Service types: ClusterIP, NodePort, LoadBalancer, ExternalName</li>
+                            <li>Selectors, Endpoints, and EndpointSlices</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>Advanced Topics</h4>
                         <ul>
-                            <li class="fragment fade-up">DNS-based and environment variable discovery</li>
-                            <li class="fragment fade-up">kube-proxy modes and traffic policies</li>
-                            <li class="fragment fade-up">Headless Services and multi-port patterns</li>
-                            <li class="fragment fade-up">AWS Load Balancer Controller</li>
+                            <li>DNS-based and environment variable discovery</li>
+                            <li>kube-proxy modes and traffic policies</li>
+                            <li>Headless Services and multi-port patterns</li>
+                            <li>AWS Load Balancer Controller</li>
                         </ul>
                     </div>
                 </div>
@@ -131,13 +131,13 @@
                     <strong>Pod IPs are ephemeral.</strong> Every time a Pod restarts, it receives a new IP address from the CNI plugin.
                 </div>
                 <ul>
-                    <li class="fragment fade-up">Pods are mortal &mdash; Deployments replace them on failure or scaling events</li>
-                    <li class="fragment fade-up">ReplicaSets create multiple Pods for the same workload &mdash; which IP do clients use?</li>
-                    <li class="fragment fade-up">Rolling updates replace Pods one by one with new IPs</li>
-                    <li class="fragment fade-up">Nodes can fail, causing Pods to reschedule on different nodes</li>
-                    <li class="fragment fade-up">Hard-coding IPs is fragile and defeats the purpose of orchestration</li>
+                    <li>Pods are mortal &mdash; Deployments replace them on failure or scaling events</li>
+                    <li>ReplicaSets create multiple Pods for the same workload &mdash; which IP do clients use?</li>
+                    <li>Rolling updates replace Pods one by one with new IPs</li>
+                    <li>Nodes can fail, causing Pods to reschedule on different nodes</li>
+                    <li>Hard-coding IPs is fragile and defeats the purpose of orchestration</li>
                 </ul>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Key insight:</strong> You need a stable endpoint that abstracts over a dynamic set of Pods.
                 </div>
                 <aside class="notes">Multiple replicas mean multiple changing IPs. Rolling updates swap them out. You cannot hard-code them. Services solve this.</aside>
@@ -149,14 +149,14 @@
                 <div class="concept-box">
                     <h4>What a Service Provides</h4>
                     <ul>
-                        <li class="fragment fade-up"><strong>Stable virtual IP</strong> (ClusterIP) that never changes</li>
-                        <li class="fragment fade-up"><strong>Stable DNS name</strong> that resolves to the virtual IP</li>
-                        <li class="fragment fade-up"><strong>Load balancing</strong> across healthy backend Pods</li>
-                        <li class="fragment fade-up"><strong>Automatic endpoint updates</strong> as Pods come and go</li>
-                        <li class="fragment fade-up"><strong>Decoupling</strong> between producers and consumers</li>
+                        <li><strong>Stable virtual IP</strong> (ClusterIP) that never changes</li>
+                        <li><strong>Stable DNS name</strong> that resolves to the virtual IP</li>
+                        <li><strong>Load balancing</strong> across healthy backend Pods</li>
+                        <li><strong>Automatic endpoint updates</strong> as Pods come and go</li>
+                        <li><strong>Decoupling</strong> between producers and consumers</li>
                     </ul>
                 </div>
-                <div class="highlight-box success fragment fade-up">
+                <div class="highlight-box success">
                     <strong>Result:</strong> Clients connect to a Service name or IP &mdash; Kubernetes handles routing to the right Pod.
                 </div>
                 <aside class="notes">A Service provides a virtual IP and DNS name that persist for its lifetime. Kubernetes keeps routing rules updated as Pods change.</aside>
@@ -185,11 +185,11 @@
                         <div class="concept-box">
                             <h4>Default Service Type</h4>
                             <ul>
-                                <li class="fragment fade-up">Allocates a virtual IP from the Service CIDR</li>
-                                <li class="fragment fade-up">Accessible <strong>only within</strong> the cluster</li>
-                                <li class="fragment fade-up">kube-proxy programs iptables/IPVS rules</li>
-                                <li class="fragment fade-up">Round-robin load balancing by default</li>
-                                <li class="fragment fade-up">Most common type for internal communication</li>
+                                <li>Allocates a virtual IP from the Service CIDR</li>
+                                <li>Accessible <strong>only within</strong> the cluster</li>
+                                <li>kube-proxy programs iptables/IPVS rules</li>
+                                <li>Round-robin load balancing by default</li>
+                                <li>Most common type for internal communication</li>
                             </ul>
                         </div>
                     </div>
@@ -219,11 +219,11 @@ spec:
                         <div class="concept-box">
                             <h4>Extends ClusterIP</h4>
                             <ul>
-                                <li class="fragment fade-up">Opens a static port (30000&ndash;32767) on every node</li>
-                                <li class="fragment fade-up">Still creates a ClusterIP internally</li>
-                                <li class="fragment fade-up">External traffic: <code>&lt;NodeIP&gt;:&lt;NodePort&gt;</code></li>
-                                <li class="fragment fade-up">kube-proxy routes to backend Pods</li>
-                                <li class="fragment fade-up">Port range configurable via API server flag</li>
+                                <li>Opens a static port (30000&ndash;32767) on every node</li>
+                                <li>Still creates a ClusterIP internally</li>
+                                <li>External traffic: <code>&lt;NodeIP&gt;:&lt;NodePort&gt;</code></li>
+                                <li>kube-proxy routes to backend Pods</li>
+                                <li>Port range configurable via API server flag</li>
                             </ul>
                         </div>
                     </div>
@@ -251,10 +251,10 @@ spec:
                 <div class="concept-box">
                     <h4>Cloud-Integrated Load Balancing</h4>
                     <ul>
-                        <li class="fragment fade-up">Extends NodePort &mdash; provisions an external load balancer via cloud provider</li>
-                        <li class="fragment fade-up">On AWS EKS: creates a Classic LB, NLB, or ALB depending on annotations</li>
-                        <li class="fragment fade-up">Assigns a public or internal DNS name to the load balancer</li>
-                        <li class="fragment fade-up">Each LoadBalancer Service gets its own cloud LB (cost consideration)</li>
+                        <li>Extends NodePort &mdash; provisions an external load balancer via cloud provider</li>
+                        <li>On AWS EKS: creates a Classic LB, NLB, or ALB depending on annotations</li>
+                        <li>Assigns a public or internal DNS name to the load balancer</li>
+                        <li>Each LoadBalancer Service gets its own cloud LB (cost consideration)</li>
                     </ul>
                 </div>
                 <pre><code class="language-yaml" data-trim>metadata:
@@ -275,11 +275,11 @@ spec:
                         <div class="concept-box">
                             <h4>DNS Alias (CNAME)</h4>
                             <ul>
-                                <li class="fragment fade-up">Maps a Service name to an external DNS name</li>
-                                <li class="fragment fade-up">Returns a CNAME record, <strong>not</strong> a ClusterIP</li>
-                                <li class="fragment fade-up">No selectors or endpoints</li>
-                                <li class="fragment fade-up">No proxying &mdash; DNS resolution only</li>
-                                <li class="fragment fade-up">Useful for referencing external databases or APIs</li>
+                                <li>Maps a Service name to an external DNS name</li>
+                                <li>Returns a CNAME record, <strong>not</strong> a ClusterIP</li>
+                                <li>No selectors or endpoints</li>
+                                <li>No proxying &mdash; DNS resolution only</li>
+                                <li>Useful for referencing external databases or APIs</li>
                             </ul>
                         </div>
                     </div>
@@ -305,25 +305,25 @@ spec:
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>ClusterIP</strong></td>
                             <td>Internal only</td>
                             <td>Virtual IP / DNS</td>
                             <td>Inter-service communication</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>NodePort</strong></td>
                             <td>Internal + external</td>
                             <td>NodeIP:Port</td>
                             <td>Development, bare-metal</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>LoadBalancer</strong></td>
                             <td>Internal + external</td>
                             <td>Cloud LB DNS</td>
                             <td>External access via cloud LB</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>ExternalName</strong></td>
                             <td>DNS alias</td>
                             <td>CNAME record</td>
@@ -331,7 +331,7 @@ spec:
                         </tr>
                     </tbody>
                 </table>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Remember:</strong> Each type builds on the previous &mdash; LoadBalancer &#8835; NodePort &#8835; ClusterIP.
                 </div>
                 <aside class="notes">Types build on each other: LoadBalancer creates a NodePort, which creates a ClusterIP. ExternalName is the exception -- pure DNS alias. Typically, ClusterIP handles internal services and Ingress with ALB handles external access.</aside>
@@ -360,11 +360,11 @@ metadata:
                         <div class="concept-box">
                             <h4>Matching Rules</h4>
                             <ul>
-                                <li class="fragment fade-up">Selector uses <strong>equality-based</strong> matching</li>
-                                <li class="fragment fade-up">Pod must have <strong>all</strong> selector labels</li>
-                                <li class="fragment fade-up">Pod can have <strong>additional</strong> labels</li>
-                                <li class="fragment fade-up">Labels must match in the <strong>same namespace</strong></li>
-                                <li class="fragment fade-up">Services are namespace-scoped</li>
+                                <li>Selector uses <strong>equality-based</strong> matching</li>
+                                <li>Pod must have <strong>all</strong> selector labels</li>
+                                <li>Pod can have <strong>additional</strong> labels</li>
+                                <li>Labels must match in the <strong>same namespace</strong></li>
+                                <li>Services are namespace-scoped</li>
                             </ul>
                         </div>
                     </div>
@@ -415,14 +415,14 @@ metadata:
                 <div class="concept-box">
                     <h4>How It Works</h4>
                     <ul>
-                        <li class="fragment fade-up">CoreDNS runs as a Deployment in <code>kube-system</code> namespace</li>
-                        <li class="fragment fade-up">Every Service gets a DNS record automatically</li>
-                        <li class="fragment fade-up">Pods are configured to use CoreDNS via <code>/etc/resolv.conf</code></li>
-                        <li class="fragment fade-up">CoreDNS watches the Kubernetes API for Service/Endpoint changes</li>
-                        <li class="fragment fade-up">Supports A, AAAA, SRV, and CNAME records</li>
+                        <li>CoreDNS runs as a Deployment in <code>kube-system</code> namespace</li>
+                        <li>Every Service gets a DNS record automatically</li>
+                        <li>Pods are configured to use CoreDNS via <code>/etc/resolv.conf</code></li>
+                        <li>CoreDNS watches the Kubernetes API for Service/Endpoint changes</li>
+                        <li>Supports A, AAAA, SRV, and CNAME records</li>
                     </ul>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>In practice:</strong> Applications simply connect to the Service name &mdash; DNS handles the rest.
                 </div>
                 <aside class="notes">CoreDNS watches the API server and auto-creates DNS records for Services. Every Pod's resolv.conf points to CoreDNS, so resolution works without additional setup.</aside>
@@ -446,7 +446,7 @@ _http._tcp.backend-api.production.svc.cluster.local
 # Pod DNS (when hostname/subdomain set)
 &lt;pod-hostname&gt;.&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></pre>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Shorthand works within the same namespace:</strong> Just use <code>backend-api</code> instead of the full FQDN. Cross-namespace: use <code>backend-api.production</code>.
                 </div>
                 <aside class="notes">Search domains in resolv.conf allow short names within the same namespace. Cross-namespace requires service.namespace. A trailing dot on the FQDN avoids unnecessary DNS search iterations.</aside>
@@ -484,11 +484,11 @@ BACKEND_API_PORT_80_TCP_ADDR=10.96.0.15</code></pre>
                         <div class="concept-box">
                             <h4>clusterIP: None</h4>
                             <ul>
-                                <li class="fragment fade-up">No virtual IP allocated</li>
-                                <li class="fragment fade-up">DNS returns <strong>all Pod IPs</strong> directly</li>
-                                <li class="fragment fade-up">Client-side service discovery</li>
-                                <li class="fragment fade-up">Essential for StatefulSets</li>
-                                <li class="fragment fade-up">Used by databases, message queues, ZooKeeper</li>
+                                <li>No virtual IP allocated</li>
+                                <li>DNS returns <strong>all Pod IPs</strong> directly</li>
+                                <li>Client-side service discovery</li>
+                                <li>Essential for StatefulSets</li>
+                                <li>Used by databases, message queues, ZooKeeper</li>
                             </ul>
                         </div>
                     </div>
@@ -523,25 +523,25 @@ $ nslookup cassandra.default.svc
                     <div class="card">
                         <h4>iptables Mode (Default)</h4>
                         <ul>
-                            <li class="fragment fade-up">Programs iptables NAT rules</li>
-                            <li class="fragment fade-up">Random backend selection</li>
-                            <li class="fragment fade-up">O(n) rule evaluation</li>
-                            <li class="fragment fade-up">Proven, widely deployed</li>
-                            <li class="fragment fade-up">Performance degrades at >5000 Services</li>
+                            <li>Programs iptables NAT rules</li>
+                            <li>Random backend selection</li>
+                            <li>O(n) rule evaluation</li>
+                            <li>Proven, widely deployed</li>
+                            <li>Performance degrades at >5000 Services</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>IPVS Mode</h4>
                         <ul>
-                            <li class="fragment fade-up">Uses Linux IPVS (kernel-level L4 LB)</li>
-                            <li class="fragment fade-up">O(1) connection routing with hash tables</li>
-                            <li class="fragment fade-up">Multiple algorithms: rr, lc, sh, dh</li>
-                            <li class="fragment fade-up">Better performance at scale</li>
-                            <li class="fragment fade-up">Requires IPVS kernel modules</li>
+                            <li>Uses Linux IPVS (kernel-level L4 LB)</li>
+                            <li>O(1) connection routing with hash tables</li>
+                            <li>Multiple algorithms: rr, lc, sh, dh</li>
+                            <li>Better performance at scale</li>
+                            <li>Requires IPVS kernel modules</li>
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>EKS default:</strong> iptables mode. Consider IPVS for clusters with thousands of Services.
                 </div>
                 <aside class="notes">iptables mode programs NAT rules in netfilter; works for most clusters but degrades with thousands of Services. IPVS uses hash tables for O(1) lookups, better at scale. EKS defaults to iptables.</aside>
@@ -557,10 +557,10 @@ $ nslookup cassandra.default.svc
   internalTrafficPolicy: Cluster
   externalTrafficPolicy: Cluster</code></pre>
                         <ul>
-                            <li class="fragment fade-up">Traffic can route to <strong>any Pod</strong> in the cluster</li>
-                            <li class="fragment fade-up">Even load distribution</li>
-                            <li class="fragment fade-up">Extra network hop if Pod is on another node</li>
-                            <li class="fragment fade-up">Source IP is SNATed (masked)</li>
+                            <li>Traffic can route to <strong>any Pod</strong> in the cluster</li>
+                            <li>Even load distribution</li>
+                            <li>Extra network hop if Pod is on another node</li>
+                            <li>Source IP is SNATed (masked)</li>
                         </ul>
                     </div>
                     <div class="card">
@@ -569,10 +569,10 @@ $ nslookup cassandra.default.svc
   internalTrafficPolicy: Local
   externalTrafficPolicy: Local</code></pre>
                         <ul>
-                            <li class="fragment fade-up">Traffic only routes to Pods on the <strong>same node</strong></li>
-                            <li class="fragment fade-up">Preserves source IP</li>
-                            <li class="fragment fade-up">Avoids extra hop (lower latency)</li>
-                            <li class="fragment fade-up">Risk of uneven distribution</li>
+                            <li>Traffic only routes to Pods on the <strong>same node</strong></li>
+                            <li>Preserves source IP</li>
+                            <li>Avoids extra hop (lower latency)</li>
+                            <li>Risk of uneven distribution</li>
                         </ul>
                     </div>
                 </div>
@@ -651,34 +651,34 @@ $ nslookup cassandra.default.svc
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>Load Distribution</strong></td>
                             <td>Even across all Pods</td>
                             <td>Uneven if Pods ≠ nodes</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>Source IP</strong></td>
                             <td>SNATed (lost)</td>
                             <td>Preserved</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>Health Checks</strong></td>
                             <td>N/A</td>
                             <td>LB health checks node:healthCheckNodePort</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>Network Hops</strong></td>
                             <td>Possible extra hop</td>
                             <td>No extra hop</td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><strong>Failure Mode</strong></td>
                             <td>Any Pod can serve</td>
                             <td>Nodes without Pods get no traffic</td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Recommendation:</strong> Use <code>externalTrafficPolicy: Local</code> when source IP preservation is required for security logging or geo-routing.
                 </div>
                 <aside class="notes">With Local policy, nodes without Pods fail health checks and get no traffic. Choose Local when you need source IP for audit logging, security, or geo-routing.</aside>
@@ -692,10 +692,10 @@ $ nslookup cassandra.default.svc
                         <div class="concept-box">
                             <h4>Keep Traffic Local</h4>
                             <ul>
-                                <li class="fragment fade-up">Prefers routing to Pods in the same AZ</li>
-                                <li class="fragment fade-up">Reduces cross-AZ data transfer costs</li>
-                                <li class="fragment fade-up">Lower latency for east-west traffic</li>
-                                <li class="fragment fade-up">Falls back to other zones if no local Pods</li>
+                                <li>Prefers routing to Pods in the same AZ</li>
+                                <li>Reduces cross-AZ data transfer costs</li>
+                                <li>Lower latency for east-west traffic</li>
+                                <li>Falls back to other zones if no local Pods</li>
                             </ul>
                         </div>
                     </div>
@@ -738,7 +738,7 @@ spec:
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>When to adopt:</strong> Consider a service mesh when you need mTLS between all services, advanced traffic splitting, or deep observability across microservices.
                 </div>
                 <aside class="notes">A service mesh adds a proxy sidecar to every Pod for mTLS, traffic management, and observability. Trade-off is complexity and resource overhead. Standard Services and Ingress cover most use cases.</aside>
@@ -750,10 +750,10 @@ spec:
                 <div class="concept-box">
                     <h4>AWS Load Balancer Integration</h4>
                     <ul>
-                        <li class="fragment fade-up">Replaces the in-tree cloud provider for LB provisioning</li>
-                        <li class="fragment fade-up">Creates <strong>NLB</strong> for LoadBalancer Services, <strong>ALB</strong> for Ingress resources</li>
-                        <li class="fragment fade-up">Supports IP-mode targets (bypasses NodePort, routes directly to Pods)</li>
-                        <li class="fragment fade-up">Integrates with AWS WAF, Shield, and ACM for TLS</li>
+                        <li>Replaces the in-tree cloud provider for LB provisioning</li>
+                        <li>Creates <strong>NLB</strong> for LoadBalancer Services, <strong>ALB</strong> for Ingress resources</li>
+                        <li>Supports IP-mode targets (bypasses NodePort, routes directly to Pods)</li>
+                        <li>Integrates with AWS WAF, Shield, and ACM for TLS</li>
                     </ul>
                 </div>
                 <pre><code class="language-yaml" data-trim>metadata:
@@ -775,10 +775,10 @@ spec:
                     <div class="card">
                         <h4>Instance Mode</h4>
                         <ul>
-                            <li class="fragment fade-up">NLB targets = EC2 instances</li>
-                            <li class="fragment fade-up">Traffic: NLB &rarr; NodePort &rarr; kube-proxy &rarr; Pod</li>
-                            <li class="fragment fade-up">Extra network hop through NodePort</li>
-                            <li class="fragment fade-up">Works with any CNI</li>
+                            <li>NLB targets = EC2 instances</li>
+                            <li>Traffic: NLB &rarr; NodePort &rarr; kube-proxy &rarr; Pod</li>
+                            <li>Extra network hop through NodePort</li>
+                            <li>Works with any CNI</li>
                         </ul>
                         <pre><code class="language-yaml" data-trim>annotations:
   service.beta.kubernetes.io/
@@ -787,17 +787,17 @@ spec:
                     <div class="card">
                         <h4>IP Mode (Recommended)</h4>
                         <ul>
-                            <li class="fragment fade-up">NLB targets = Pod IPs directly</li>
-                            <li class="fragment fade-up">Traffic: NLB &rarr; Pod (one hop)</li>
-                            <li class="fragment fade-up">Lower latency, better performance</li>
-                            <li class="fragment fade-up">Requires VPC CNI plugin</li>
+                            <li>NLB targets = Pod IPs directly</li>
+                            <li>Traffic: NLB &rarr; Pod (one hop)</li>
+                            <li>Lower latency, better performance</li>
+                            <li>Requires VPC CNI plugin</li>
                         </ul>
                         <pre><code class="language-yaml" data-trim>annotations:
   service.beta.kubernetes.io/
     aws-load-balancer-nlb-target-type: "ip"</code></pre>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>EKS best practice:</strong> Use IP mode with the VPC CNI plugin for optimal performance and source IP preservation.
                 </div>
                 <aside class="notes">Instance mode routes through NodePort and kube-proxy (extra hops). IP mode registers Pod IPs directly as NLB targets (single hop). IP mode requires VPC CNI, which EKS uses by default. Prefer IP mode.</aside>
@@ -835,23 +835,23 @@ kubectl logs -n kube-system -l k8s-app=kube-proxy --tail=50</code></pre>
                     <div class="card">
                         <h4>&#9989; Do</h4>
                         <ul>
-                            <li class="fragment fade-up">Use DNS for service discovery</li>
-                            <li class="fragment fade-up">Use named ports in targetPort</li>
-                            <li class="fragment fade-up">Set <code>externalTrafficPolicy: Local</code> when source IP matters</li>
-                            <li class="fragment fade-up">Enable topology-aware routing in multi-AZ clusters</li>
-                            <li class="fragment fade-up">Use IP-mode NLB on EKS</li>
-                            <li class="fragment fade-up">Always define readiness probes</li>
+                            <li>Use DNS for service discovery</li>
+                            <li>Use named ports in targetPort</li>
+                            <li>Set <code>externalTrafficPolicy: Local</code> when source IP matters</li>
+                            <li>Enable topology-aware routing in multi-AZ clusters</li>
+                            <li>Use IP-mode NLB on EKS</li>
+                            <li>Always define readiness probes</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>&#10060; Avoid</h4>
                         <ul>
-                            <li class="fragment fade-up">Hard-coding Pod IPs anywhere</li>
-                            <li class="fragment fade-up">Relying on env vars for discovery</li>
-                            <li class="fragment fade-up">Creating one LoadBalancer per service</li>
-                            <li class="fragment fade-up">Ignoring empty endpoints warnings</li>
-                            <li class="fragment fade-up">Using session affinity for new applications</li>
-                            <li class="fragment fade-up">Skipping readiness probes (sends traffic to unready Pods)</li>
+                            <li>Hard-coding Pod IPs anywhere</li>
+                            <li>Relying on env vars for discovery</li>
+                            <li>Creating one LoadBalancer per service</li>
+                            <li>Ignoring empty endpoints warnings</li>
+                            <li>Using session affinity for new applications</li>
+                            <li>Skipping readiness probes (sends traffic to unready Pods)</li>
                         </ul>
                     </div>
                 </div>
@@ -863,12 +863,12 @@ kubectl logs -n kube-system -l k8s-app=kube-proxy --tail=50</code></pre>
                 <h2>&#129489;&#8205;&#128187; Lab 4: Services and Discovery</h2>
                 <h3>Hands-On Exercise</h3>
                 <ul>
-                    <li class="fragment fade-up">Deploy a multi-tier app and create ClusterIP and NodePort Services</li>
-                    <li class="fragment fade-up">Test DNS-based service discovery and examine DNS records</li>
-                    <li class="fragment fade-up">Explore Endpoints and EndpointSlices as pods scale</li>
-                    <li class="fragment fade-up">Deploy a headless Service and compare DNS responses</li>
-                    <li class="fragment fade-up">Connect the frontend to the backend over Service DNS</li>
-                    <li class="fragment fade-up"><em>Optional:</em> Provision a LoadBalancer Service and verify external access</li>
+                    <li>Deploy a multi-tier app and create ClusterIP and NodePort Services</li>
+                    <li>Test DNS-based service discovery and examine DNS records</li>
+                    <li>Explore Endpoints and EndpointSlices as pods scale</li>
+                    <li>Deploy a headless Service and compare DNS responses</li>
+                    <li>Connect the frontend to the backend over Service DNS</li>
+                    <li><em>Optional:</em> Provision a LoadBalancer Service and verify external access</li>
                 </ul>
                 <div class="highlight-box" style="margin-top: 20px;">
                     <strong>Duration:</strong> ~30 minutes

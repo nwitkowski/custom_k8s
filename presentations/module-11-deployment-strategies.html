@@ -132,7 +132,7 @@
                     <h4>Incremental Pod Replacement</h4>
                     <p>Kubernetes gradually replaces old ReplicaSet pods with new ones, controlled by two parameters: <code>maxSurge</code> and <code>maxUnavailable</code>.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>maxSurge</h4>
                         <ul>
@@ -189,10 +189,10 @@ kubectl rollout pause deployment/api-server -n production
 
 # Resume after investigation
 kubectl rollout resume deployment/api-server -n production</code></pre>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Tip:</strong> Use <code>--watch</code> with <code>kubectl get pods</code> to see individual pod transitions during a rollout. Combine with <code>-l app=api-server</code> to filter.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Pause is powerful:</strong> Pausing a rollout mid-way creates a partial canary — some pods run the old version, some the new. Use this for manual verification before resuming.
                 </div>
                 <aside class="notes">kubectl rollout status blocks until completion or failure -- useful in CI/CD scripts. Pause and resume let you verify the new version with partial traffic before proceeding, giving basic canary functionality without extra tooling.</aside>
@@ -212,7 +212,7 @@ kubectl rollout undo deployment/api-server \
 kubectl annotate deployment/api-server \
   kubernetes.io/change-cause="Upgrade to v2.1.0 - JIRA-4521" \
   -n production</code></pre>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="highlight-box success">
                         <strong>Fast Recovery:</strong> Rollback reuses the old ReplicaSet — no image pull needed if cached. Recovery takes seconds, not minutes.
                     </div>
@@ -237,7 +237,7 @@ kubectl annotate deployment/api-server \
                     <h4>Core Principle</h4>
                     <p>Run two identical environments in parallel. Route all traffic to one (blue). Deploy changes to the other (green). Switch traffic atomically when ready.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>&#9989; Advantages</h4>
                         <ul>
@@ -255,7 +255,7 @@ kubectl annotate deployment/api-server \
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Best for:</strong> Critical services, compliance-heavy environments, APIs with strict SLAs, and when rollback speed is paramount.
                 </div>
                 <aside class="notes">Blue-green is the simplest strategy to reason about. The trade-off is resource cost -- two full copies running simultaneously. Both blue and green must work with the same database schema.</aside>
@@ -299,7 +299,7 @@ kubectl patch svc api-server \
   -n production</code></pre>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Atomic switch:</strong> Changing the Service selector instantly redirects all new connections to green pods. Existing connections drain naturally.
                 </div>
                 <aside class="notes">Two identical Deployments with different slot labels. The Service selector is the traffic switch -- patch it to cut over or roll back.</aside>
@@ -318,7 +318,7 @@ spec:
         - name: api-green
           port: 80
           weight: 0</code></pre>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Gateway API advantage:</strong> Weight-based routing enables gradual cutover (90/10 &rarr; 50/50 &rarr; 0/100) rather than all-or-nothing. Blurs the line between blue-green and canary.
                 </div>
                 <aside class="notes">The Gateway API lets you control traffic weights instead of binary switching. Send 10% to green, verify metrics, then increase to 100%. On EKS, the AWS Gateway API Controller works with ALB for this.</aside>
@@ -338,7 +338,7 @@ spec:
                     <h4>Progressive Traffic Shifting</h4>
                     <p>Deploy the new version alongside the current version. Route a small percentage of traffic to it. Observe metrics. Gradually increase traffic or roll back.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>Canary Progression</h4>
                         <ul>
@@ -391,7 +391,7 @@ spec:
     metadata:
       labels: { app: api-server, track: canary }
     # ... different image tag ...</code></pre>
-                        <div class="highlight-box warning fragment fade-up">
+                        <div class="highlight-box warning">
                             <strong>Limitation:</strong> Traffic split is tied to pod ratio (1/5 = 20%). For finer control, use ingress-level splitting.
                         </div>
                     </div>
@@ -463,7 +463,7 @@ spec:
     metrics:
       - name: request-success-rate
         threshold: 99</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Key difference:</strong> Flagger wraps <em>existing</em> Deployments and automates canary analysis based on metrics. No CRD replacement needed.
                 </div>
                 <aside class="notes">Flagger watches standard Deployments and automates canary progression based on metrics. No CRD replacement needed -- it wraps existing resources.</aside>
@@ -515,7 +515,7 @@ spec:
         host: api-shadow
       mirrorPercentage:
         value: 100.0</code></pre>
-                <div class="highlight-box success fragment fade-up">
+                <div class="highlight-box success">
                     <strong>Zero risk to users:</strong> Shadow receives real traffic patterns but responses are discarded. Validates performance and correctness before any user exposure.
                 </div>
                 <aside class="notes">The new version sees real request patterns and load. Compare response times and error rates between stable and shadow. Valuable for migration testing or API refactoring without user impact.</aside>
@@ -546,7 +546,7 @@ spec:
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Recommended pattern:</strong> Combine both. Use deployment strategies for infrastructure changes and feature flags for feature activation. Deploy dark (flag off), then enable progressively.
                 </div>
                 <aside class="notes">Not either/or. Deployment strategies handle infrastructure risk; feature flags handle product risk. This separation decouples deployment from release.</aside>
@@ -573,7 +573,7 @@ spec:
   selector:
     matchLabels:
       app: api-server</code></pre>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="highlight-box">
                         <strong>Voluntary disruptions:</strong> PDBs protect against node drains, cluster autoscaler, and maintenance operations.
                     </div>
@@ -581,7 +581,7 @@ spec:
                         <strong>Not for crashes:</strong> PDBs do not protect against involuntary disruptions like node failures or OOM kills.
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>During deployments:</strong> PDBs interact with rolling updates. A PDB of <code>minAvailable: 3</code> on a 4-replica Deployment effectively forces <code>maxUnavailable: 1</code>, regardless of the Deployment's own strategy configuration.
                 </div>
                 <aside class="notes">The Deployment controller respects PDBs during rolling updates. kubectl drain refuses to evict pods if it would violate the PDB. On EKS, PDBs prevent the cluster autoscaler from being too aggressive. Define PDBs for critical services.</aside>
@@ -605,7 +605,7 @@ kubectl get deployment api-server -o json | \
 #   "reason": "ProgressDeadlineExceeded",
 #   "message": "has timed out progressing"
 # }</code></pre>
-                <div class="highlight-box danger fragment fade-up">
+                <div class="highlight-box danger">
                     <strong>Stuck rollouts:</strong> If a new pod fails readiness probes repeatedly, the rollout stalls. <code>progressDeadlineSeconds</code> marks it as failed after the deadline, enabling automated alerting and rollback.
                 </div>
                 <aside class="notes">Without progressDeadlineSeconds, a broken deployment can stall indefinitely. The Progressing condition switches to False after the deadline, triggering automated rollback in CI/CD. minReadySeconds prevents false positives from pods that crash shortly after starting.</aside>
@@ -633,7 +633,7 @@ kubectl rollout status deployment/api-server \
 # 4. Run smoke tests
 curl -sf https://api.example.com/healthz || \
   kubectl rollout undo deployment/api-server -n production</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>GitOps principle:</strong> Git is the single source of truth. All deployment changes go through Git, enabling audit trails, approvals, and automated rollback to any previous commit.
                 </div>
                 <aside class="notes">In GitOps, update manifests in Git and let ArgoCD or Flux reconcile. The pipeline includes rollout status checks, smoke tests, and metric validation. If any step fails, trigger a rollback.</aside>
@@ -668,7 +668,7 @@ curl -sf https://api.example.com/healthz || \
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>EKS tip:</strong> When using ALB Ingress Controller for canary deployments, configure <code>alb.ingress.kubernetes.io/actions.weighted-routing</code> for precise traffic splitting at the load balancer level.
                 </div>
                 <aside class="notes">Managed node groups handle node updates but need PDBs for safe draining. ECR scanning should gate CI/CD. Karpenter helps with temporary capacity needs during canary and blue-green deployments.</aside>
@@ -725,7 +725,7 @@ curl -sf https://api.example.com/healthz || \
                         </tr>
                     </tbody>
                 </table>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Choosing a strategy:</strong> Start with rolling updates. Add canary for critical services. Use blue-green when instant rollback is non-negotiable. Layer in feature flags for granular control.
                 </div>
                 <aside class="notes">Not every service needs canary or blue-green. Internal services work fine with rolling updates. Customer-facing APIs with strict SLAs benefit from blue-green or canary.</aside>
@@ -748,12 +748,12 @@ curl -sf https://api.example.com/healthz || \
                 <h2>&#129489;&#8205;&#128187; Lab 11: Deployment Strategies</h2>
                 <h3>Hands-On Exercise</h3>
                 <ul>
-                    <li class="fragment fade-up">Configure a rolling update with custom maxSurge and maxUnavailable</li>
-                    <li class="fragment fade-up">Monitor a rollout and perform a rollback to a specific revision</li>
-                    <li class="fragment fade-up">Implement a blue-green deployment with Service label switching</li>
-                    <li class="fragment fade-up">Implement canary deployment with replica ratios</li>
-                    <li class="fragment fade-up">Set up Pod Disruption Budgets and test with a dry-run node drain</li>
-                    <li class="fragment fade-up">Implement progressDeadlineSeconds and trigger a failed rollout</li>
+                    <li>Configure a rolling update with custom maxSurge and maxUnavailable</li>
+                    <li>Monitor a rollout and perform a rollback to a specific revision</li>
+                    <li>Implement a blue-green deployment with Service label switching</li>
+                    <li>Implement canary deployment with replica ratios</li>
+                    <li>Set up Pod Disruption Budgets and test with a dry-run node drain</li>
+                    <li>Implement progressDeadlineSeconds and trigger a failed rollout</li>
                 </ul>
                 <div class="highlight-box" style="margin-top: 20px;">
                     <strong>Duration:</strong> ~45 minutes
@@ -764,13 +764,13 @@ curl -sf https://api.example.com/healthz || \
             <!-- Slide 29: Key Takeaways -->
             <section>
                 <h2>&#127919; Key Takeaways</h2>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>1. Rolling updates are the baseline.</strong> Tune <code>maxSurge</code>, <code>maxUnavailable</code>, and <code>minReadySeconds</code>. Add canary for critical services.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>2. Blue-green provides instant rollback.</strong> Worth 2x resource cost for critical services. Canary reduces blast radius with metric-driven promotions.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>3. Safety mechanisms are not optional.</strong> PDBs, <code>progressDeadlineSeconds</code>, readiness probes, and <code>revisionHistoryLimit</code> should be on every Deployment. Combine with feature flags to decouple deployment from release.
                 </div>
                 <aside class="notes">Start simple with rolling updates. Add complexity only when the risk profile demands it. Safety mechanisms belong on every Deployment regardless of strategy.</aside>

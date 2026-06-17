@@ -103,12 +103,12 @@
             <section>
                 <h2>&#128203; Module Agenda</h2>
                 <ul>
-                    <li class="fragment fade-up">Kubernetes security model — authentication, authorization, admission</li>
-                    <li class="fragment fade-up">RBAC deep dive — Roles, ClusterRoles, Bindings</li>
-                    <li class="fragment fade-up">ServiceAccounts and pod identity</li>
-                    <li class="fragment fade-up">Security contexts at pod and container level</li>
-                    <li class="fragment fade-up">Pod Security Standards and admission controllers</li>
-                    <li class="fragment fade-up">Security best practices</li>
+                    <li>Kubernetes security model — authentication, authorization, admission</li>
+                    <li>RBAC deep dive — Roles, ClusterRoles, Bindings</li>
+                    <li>ServiceAccounts and pod identity</li>
+                    <li>Security contexts at pod and container level</li>
+                    <li>Pod Security Standards and admission controllers</li>
+                    <li>Security best practices</li>
                 </ul>
                 <aside class="notes">We'll work through the security model layer by layer — identities, permissions, and workload constraints. Each section builds on the previous one.</aside>
             </section>
@@ -420,11 +420,11 @@ automountServiceAccountToken: false</code></pre>
                         <div class="card">
                             <h4>Key Properties</h4>
                             <ul>
-                                <li class="fragment fade-up">Namespace-scoped identity</li>
-                                <li class="fragment fade-up">Every namespace has a <code>default</code> SA</li>
-                                <li class="fragment fade-up">Tokens are projected as volumes</li>
-                                <li class="fragment fade-up">Annotations enable cloud integrations</li>
-                                <li class="fragment fade-up">Can disable auto-mount for security</li>
+                                <li>Namespace-scoped identity</li>
+                                <li>Every namespace has a <code>default</code> SA</li>
+                                <li>Tokens are projected as volumes</li>
+                                <li>Annotations enable cloud integrations</li>
+                                <li>Can disable auto-mount for security</li>
                             </ul>
                         </div>
                     </div>
@@ -479,10 +479,10 @@ roleRef:
                         <div class="concept-box">
                             <h4>IAM Roles for Service Accounts</h4>
                             <ul>
-                                <li class="fragment fade-up">Maps K8s ServiceAccount to IAM Role</li>
-                                <li class="fragment fade-up">Uses OIDC federation</li>
-                                <li class="fragment fade-up">No shared node-level credentials</li>
-                                <li class="fragment fade-up">Fine-grained per-pod access</li>
+                                <li>Maps K8s ServiceAccount to IAM Role</li>
+                                <li>Uses OIDC federation</li>
+                                <li>No shared node-level credentials</li>
+                                <li>Fine-grained per-pod access</li>
                             </ul>
                         </div>
                     </div>
@@ -490,11 +490,11 @@ roleRef:
                         <div class="card">
                             <h4>How IRSA Works</h4>
                             <ol>
-                                <li class="fragment fade-up">EKS cluster has an OIDC provider</li>
-                                <li class="fragment fade-up">IAM role trusts the OIDC provider</li>
-                                <li class="fragment fade-up">SA annotated with IAM role ARN</li>
-                                <li class="fragment fade-up">Pod receives projected OIDC token</li>
-                                <li class="fragment fade-up">AWS SDK exchanges token for creds</li>
+                                <li>EKS cluster has an OIDC provider</li>
+                                <li>IAM role trusts the OIDC provider</li>
+                                <li>SA annotated with IAM role ARN</li>
+                                <li>Pod receives projected OIDC token</li>
+                                <li>AWS SDK exchanges token for creds</li>
                             </ol>
                         </div>
                     </div>
@@ -573,10 +573,10 @@ roleRef:
                         <div class="card">
                             <h4>Minimal Images</h4>
                             <ul>
-                                <li class="fragment fade-up"><strong>Multi-stage builds</strong> — compile in one stage, copy only the binary to the final image</li>
-                                <li class="fragment fade-up"><strong>Distroless</strong> — Google's images with no shell or package manager</li>
-                                <li class="fragment fade-up"><strong>Alpine</strong> — ~5 MB base; good for interpreted languages</li>
-                                <li class="fragment fade-up"><strong>scratch</strong> — empty base for statically linked Go / Rust binaries</li>
+                                <li><strong>Multi-stage builds</strong> — compile in one stage, copy only the binary to the final image</li>
+                                <li><strong>Distroless</strong> — Google's images with no shell or package manager</li>
+                                <li><strong>Alpine</strong> — ~5 MB base; good for interpreted languages</li>
+                                <li><strong>scratch</strong> — empty base for statically linked Go / Rust binaries</li>
                             </ul>
                         </div>
                     </div>
@@ -689,11 +689,11 @@ metadata:
                         <div class="card">
                             <h4>RBAC Least Privilege</h4>
                             <ul>
-                                <li class="fragment fade-up">Use Roles over ClusterRoles when possible</li>
-                                <li class="fragment fade-up">Grant specific verbs — avoid <code>*</code></li>
-                                <li class="fragment fade-up">Name specific resources</li>
-                                <li class="fragment fade-up">Use <code>resourceNames</code> for fine-grained control</li>
-                                <li class="fragment fade-up">Audit with <code>kubectl auth can-i</code></li>
+                                <li>Use Roles over ClusterRoles when possible</li>
+                                <li>Grant specific verbs — avoid <code>*</code></li>
+                                <li>Name specific resources</li>
+                                <li>Use <code>resourceNames</code> for fine-grained control</li>
+                                <li>Audit with <code>kubectl auth can-i</code></li>
                             </ul>
                         </div>
                     </div>
@@ -757,10 +757,10 @@ rules:
                         <div class="card">
                             <h4>Image Scanning</h4>
                             <ul>
-                                <li class="fragment fade-up">Scan in CI/CD pipeline (Trivy, Grype)</li>
-                                <li class="fragment fade-up">ECR image scanning (on push)</li>
-                                <li class="fragment fade-up">Block critical CVEs from deploying</li>
-                                <li class="fragment fade-up">Scan base images regularly</li>
+                                <li>Scan in CI/CD pipeline (Trivy, Grype)</li>
+                                <li>ECR image scanning (on push)</li>
+                                <li>Block critical CVEs from deploying</li>
+                                <li>Scan base images regularly</li>
                             </ul>
                         </div>
                         <div class="highlight-box" style="margin-top: 15px;">
@@ -771,10 +771,10 @@ rules:
                         <div class="card">
                             <h4>Image Signing &amp; Verification</h4>
                             <ul>
-                                <li class="fragment fade-up">Sign images with Cosign / Notation</li>
-                                <li class="fragment fade-up">Verify signatures at admission</li>
-                                <li class="fragment fade-up">Use allowlisted registries only</li>
-                                <li class="fragment fade-up">Pin images by SHA256 digest</li>
+                                <li>Sign images with Cosign / Notation</li>
+                                <li>Verify signatures at admission</li>
+                                <li>Use allowlisted registries only</li>
+                                <li>Pin images by SHA256 digest</li>
                             </ul>
                         </div>
                         <pre style="margin-top: 15px;"><code class="language-yaml"># Pin image by digest
@@ -795,11 +795,11 @@ containers:
                         <div class="card">
                             <h4>Cluster Configuration</h4>
                             <ul>
-                                <li class="fragment fade-up">Enable envelope encryption for secrets</li>
-                                <li class="fragment fade-up">Use private API endpoint</li>
-                                <li class="fragment fade-up">Enable control plane logging</li>
-                                <li class="fragment fade-up">Restrict CIDR for API access</li>
-                                <li class="fragment fade-up">Keep Kubernetes version current</li>
+                                <li>Enable envelope encryption for secrets</li>
+                                <li>Use private API endpoint</li>
+                                <li>Enable control plane logging</li>
+                                <li>Restrict CIDR for API access</li>
+                                <li>Keep Kubernetes version current</li>
                             </ul>
                         </div>
                     </div>
@@ -807,11 +807,11 @@ containers:
                         <div class="card">
                             <h4>Workload Configuration</h4>
                             <ul>
-                                <li class="fragment fade-up">Use IRSA or EKS Pod Identity</li>
-                                <li class="fragment fade-up">Enforce Pod Security Standards</li>
-                                <li class="fragment fade-up">Use NetworkPolicies (needs CNI support)</li>
-                                <li class="fragment fade-up">Rotate ServiceAccount tokens</li>
-                                <li class="fragment fade-up">Use external secrets (Secrets Manager)</li>
+                                <li>Use IRSA or EKS Pod Identity</li>
+                                <li>Enforce Pod Security Standards</li>
+                                <li>Use NetworkPolicies (needs CNI support)</li>
+                                <li>Rotate ServiceAccount tokens</li>
+                                <li>Use external secrets (Secrets Manager)</li>
                             </ul>
                         </div>
                     </div>
@@ -836,11 +836,11 @@ containers:
                     <strong>Without IRSA:</strong> Every pod on a node inherits the EC2 instance profile &mdash; the same IAM role for all workloads.
                 </div>
                 <ul>
-                    <li class="fragment fade-up"><strong>Over-privileged pods</strong> &mdash; a logging sidecar gets the same S3/SQS access as your data pipeline</li>
-                    <li class="fragment fade-up"><strong>Blast radius</strong> &mdash; one compromised container can access every AWS resource the node role permits</li>
-                    <li class="fragment fade-up"><strong>No audit granularity</strong> &mdash; CloudTrail shows the node role, not which pod made the API call</li>
+                    <li><strong>Over-privileged pods</strong> &mdash; a logging sidecar gets the same S3/SQS access as your data pipeline</li>
+                    <li><strong>Blast radius</strong> &mdash; one compromised container can access every AWS resource the node role permits</li>
+                    <li><strong>No audit granularity</strong> &mdash; CloudTrail shows the node role, not which pod made the API call</li>
                 </ul>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>IRSA solves this</strong> by mapping each Kubernetes ServiceAccount to its own IAM role with scoped permissions &mdash; true least privilege for AWS access.
                 </div>
                 <aside class="notes">Any pod can query IMDS (169.254.169.254) to get the broad node role credentials. IRSA gives each ServiceAccount its own short-lived, scoped IAM credentials instead.</aside>
@@ -852,14 +852,14 @@ containers:
                 <div class="concept-box">
                     <h4>End-to-End Flow</h4>
                     <ol>
-                        <li class="fragment fade-up"><strong>EKS cluster exposes an OIDC endpoint</strong> &mdash; registered as an IAM Identity Provider</li>
-                        <li class="fragment fade-up"><strong>Pod starts</strong> &mdash; EKS webhook injects a projected JWT token + <code>AWS_ROLE_ARN</code> env var</li>
-                        <li class="fragment fade-up"><strong>AWS SDK calls STS</strong> <code>AssumeRoleWithWebIdentity</code> with the JWT</li>
-                        <li class="fragment fade-up"><strong>STS validates</strong> the token signature via the OIDC provider's JWKS</li>
-                        <li class="fragment fade-up"><strong>STS returns temporary credentials</strong> scoped to that ServiceAccount's IAM role</li>
+                        <li><strong>EKS cluster exposes an OIDC endpoint</strong> &mdash; registered as an IAM Identity Provider</li>
+                        <li><strong>Pod starts</strong> &mdash; EKS webhook injects a projected JWT token + <code>AWS_ROLE_ARN</code> env var</li>
+                        <li><strong>AWS SDK calls STS</strong> <code>AssumeRoleWithWebIdentity</code> with the JWT</li>
+                        <li><strong>STS validates</strong> the token signature via the OIDC provider's JWKS</li>
+                        <li><strong>STS returns temporary credentials</strong> scoped to that ServiceAccount's IAM role</li>
                     </ol>
                 </div>
-                <div class="highlight-box success fragment fade-up">
+                <div class="highlight-box success">
                     <strong>Zero code changes:</strong> The AWS SDK credential chain detects IRSA environment variables automatically.
                 </div>
                 <aside class="notes">The projected token is short-lived and auto-rotated by the kubelet — EKS injects a 24h token by default, though expirationSeconds can shorten it (the earlier example uses 1h). It is audience-scoped to sts.amazonaws.com, and the SDK handles everything transparently.</aside>
@@ -898,7 +898,7 @@ metadata:
 }</code></pre>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Security boundary:</strong> The <code>:sub</code> condition scopes the role to an exact namespace + ServiceAccount. Without it, any SA in the cluster could assume this role.
                 </div>
                 <aside class="notes">The :sub condition must exactly match namespace:serviceaccount-name. For quick setup, eksctl create iamserviceaccount handles both sides. For repeatability, manage via Terraform or CloudFormation.</aside>
@@ -953,16 +953,16 @@ metadata:
             <!-- Key Takeaways -->
             <section>
                 <h2>&#127919; Key Takeaways</h2>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Least Privilege:</strong> Grant minimum permissions needed. Roles define what; Bindings define who. Start with no access and add as required.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>PSS Restricted Profile:</strong> Use the restricted Pod Security Standard to enforce non-root, read-only FS, and no privilege escalation. Combine with securityContext and audit logging for defense in depth.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>IRSA for Pod Identity:</strong> Per-pod AWS credentials via OIDC federation eliminate shared node IAM roles and static credentials.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Audit Logging:</strong> Enable audit logging and forward to your SIEM for detecting unauthorized access and policy violations.
                 </div>
                 <aside class="notes">Least privilege applies to both RBAC and IAM. PSS restricted replaces PSPs. IRSA eliminates long-lived AWS credentials. Audit logging supports compliance and incident response.</aside>

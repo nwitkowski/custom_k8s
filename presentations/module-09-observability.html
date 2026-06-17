@@ -150,7 +150,7 @@
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Goal:</strong> Build systems where internal state is externally queryable without deploying new code.
                 </div>
                 <aside class="notes">Monitoring is a subset of observability — pre-configured answers to known questions. Observability gives you the data and tools to answer questions you haven't thought of yet.</aside>
@@ -160,7 +160,7 @@
             <section>
                 <h2>&#128200; The Three Pillars</h2>
                 <div class="three-columns">
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128220; Logs</h4>
                         <ul>
                             <li>What happened</li>
@@ -168,7 +168,7 @@
                             <li>High cardinality</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128202; Metrics</h4>
                         <ul>
                             <li>How much / how fast</li>
@@ -176,7 +176,7 @@
                             <li>Low storage cost</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128279; Traces</h4>
                         <ul>
                             <li>Where time is spent</li>
@@ -194,12 +194,12 @@
                 <div class="concept-box">
                     <h4>Typical Debugging Flow</h4>
                     <ol>
-                        <li class="fragment fade-up"><strong>Metrics</strong> alert fires &mdash; error rate exceeds threshold</li>
-                        <li class="fragment fade-up"><strong>Traces</strong> reveal which service in the call chain is slow</li>
-                        <li class="fragment fade-up"><strong>Logs</strong> from that service show the root cause (e.g., DB timeout)</li>
+                        <li><strong>Metrics</strong> alert fires &mdash; error rate exceeds threshold</li>
+                        <li><strong>Traces</strong> reveal which service in the call chain is slow</li>
+                        <li><strong>Logs</strong> from that service show the root cause (e.g., DB timeout)</li>
                     </ol>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Correlation is key:</strong> Use trace IDs to link logs, metrics, and traces for the same request.
                 </div>
                 <aside class="notes">The real power comes from correlation. Metrics tell you something is wrong, traces narrow it to a service, logs give the exact error. Without shared trace IDs, you're searching blindly.</aside>
@@ -218,14 +218,14 @@
                 <div class="concept-box">
                     <h4>How Kubernetes Captures Logs</h4>
                     <ul>
-                        <li class="fragment fade-up">Containers write to <code>stdout</code> and <code>stderr</code></li>
-                        <li class="fragment fade-up">Container runtime redirects streams to a logging driver</li>
-                        <li class="fragment fade-up">Kubelet stores logs at <code>/var/log/containers/</code></li>
-                        <li class="fragment fade-up">Log rotation managed by kubelet (<code>containerLogMaxSize</code>, <code>containerLogMaxFiles</code>)</li>
-                        <li class="fragment fade-up">Logs are <strong>ephemeral</strong> &mdash; lost when pod is deleted</li>
+                        <li>Containers write to <code>stdout</code> and <code>stderr</code></li>
+                        <li>Container runtime redirects streams to a logging driver</li>
+                        <li>Kubelet stores logs at <code>/var/log/containers/</code></li>
+                        <li>Log rotation managed by kubelet (<code>containerLogMaxSize</code>, <code>containerLogMaxFiles</code>)</li>
+                        <li>Logs are <strong>ephemeral</strong> &mdash; lost when pod is deleted</li>
                     </ul>
                 </div>
-                <div class="highlight-box warning fragment fade-up">
+                <div class="highlight-box warning">
                     <strong>Key implication:</strong> Never rely on local container logs. Ship them to a durable store.
                 </div>
                 <aside class="notes">Kubernetes follows the twelve-factor principle: apps write to stdout, kubelet stores logs on disk, but they're ephemeral. When a pod is evicted or node replaced, logs are gone — centralized logging is essential.</aside>
@@ -251,7 +251,7 @@ kubectl logs deployment/api-server --tail=100 --timestamps
 
 # Logs from the last 30 minutes
 kubectl logs deployment/api-server --since=30m</code></pre>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Tip:</strong> Use <code>stern</code> for multi-pod log tailing with color-coded output per pod.
                 </div>
                 <aside class="notes">kubectl logs is your first-line debugging tool. The --previous flag is critical for crash loops. The -l flag aggregates logs across matching pods. The stern tool provides a better multi-pod tailing experience.</aside>
@@ -264,7 +264,7 @@ kubectl logs deployment/api-server --since=30m</code></pre>
                     <h4>DaemonSet-based Collection Pattern</h4>
                     <p>Node agent reads log files &rarr; enriches with K8s metadata &rarr; ships to backend</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>&#128230; Collectors</h4>
                         <ul>
@@ -331,7 +331,7 @@ after 30s for user api-svc</code></pre>
 }</code></pre>
                     </div>
                 </div>
-                <div class="highlight-box success fragment fade-up">
+                <div class="highlight-box success">
                     <strong>Why structured?</strong> Enables filtering, aggregation, and correlation. Always include <code>trace_id</code> for cross-pillar linkage.
                 </div>
                 <aside class="notes">JSON logs can be parsed, indexed, and queried without custom regex. Always include timestamp, level, message, service name, and trace ID for cross-pillar correlation.</aside>
@@ -343,13 +343,13 @@ after 30s for user api-svc</code></pre>
                 <div class="concept-box">
                     <h4>EKS Log Groups Structure</h4>
                     <ul>
-                        <li class="fragment fade-up"><code>/aws/eks/cluster-name/cluster</code> &mdash; control plane logs</li>
-                        <li class="fragment fade-up"><code>/aws/containerinsights/cluster-name/application</code> &mdash; pod logs</li>
-                        <li class="fragment fade-up"><code>/aws/containerinsights/cluster-name/host</code> &mdash; node-level logs</li>
-                        <li class="fragment fade-up"><code>/aws/containerinsights/cluster-name/dataplane</code> &mdash; kubelet, kube-proxy</li>
+                        <li><code>/aws/eks/cluster-name/cluster</code> &mdash; control plane logs</li>
+                        <li><code>/aws/containerinsights/cluster-name/application</code> &mdash; pod logs</li>
+                        <li><code>/aws/containerinsights/cluster-name/host</code> &mdash; node-level logs</li>
+                        <li><code>/aws/containerinsights/cluster-name/dataplane</code> &mdash; kubelet, kube-proxy</li>
                     </ul>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>CloudWatch Logs Insights query:</strong>
                     <pre style="margin: 10px 0 0 0;"><code class="language-sql">fields @timestamp, @message, kubernetes.pod_name
 | filter @message like /error/i
@@ -366,7 +366,7 @@ after 30s for user api-svc</code></pre>
                     <h4>Fluent Bit &rarr; Splunk HEC Pipeline</h4>
                     <p>Fluent Bit ships logs to Splunk via the <code>splunk</code> output plugin and HTTP Event Collector (HEC)</p>
                 </div>
-                <pre class="fragment fade-up"><code class="language-ini"># fluent-bit OUTPUT section
+                <pre><code class="language-ini"># fluent-bit OUTPUT section
 [OUTPUT]
     Name           splunk
     Match          kube.*
@@ -380,7 +380,7 @@ after 30s for user api-svc</code></pre>
     Event_Index    k8s_prod
     Event_Sourcetype _json
     Event_Source   fluent-bit</code></pre>
-                <div class="highlight-box fragment fade-up" style="margin-top: 10px;">
+                <div class="highlight-box" style="margin-top: 10px;">
                     <strong>Key detail:</strong> HEC token is stored in a Kubernetes Secret and injected via <code>envFrom</code>. Index-per-namespace routing uses Fluent Bit's <code>Rewrite_Tag</code> filter to direct logs to the correct Splunk index.
                 </div>
                 <aside class="notes">Fluent Bit ships JSON logs over TLS to the Splunk HEC endpoint. HEC token is stored as a K8s Secret. Rewrite_Tag filter routes logs to per-namespace Splunk indexes. Splunk_Send_Raw preserves JSON for automatic field extraction.</aside>
@@ -397,7 +397,7 @@ after 30s for user api-svc</code></pre>
             <section>
                 <h2>&#127959;&#65039; Kubernetes Metrics Architecture</h2>
                 <div class="three-columns">
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128207; Resource Metrics</h4>
                         <ul>
                             <li>CPU &amp; memory per pod/node</li>
@@ -405,7 +405,7 @@ after 30s for user api-svc</code></pre>
                             <li>Lightweight, in-memory</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#127919; Custom Metrics</h4>
                         <ul>
                             <li>App-specific (queue depth, etc.)</li>
@@ -413,7 +413,7 @@ after 30s for user api-svc</code></pre>
                             <li>Enables custom HPA scaling</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#127758; External Metrics</h4>
                         <ul>
                             <li>Outside-cluster sources</li>
@@ -431,13 +431,13 @@ after 30s for user api-svc</code></pre>
                 <div class="concept-box">
                     <h4>Pull-Based Architecture</h4>
                     <ul>
-                        <li class="fragment fade-up">Prometheus <strong>scrapes</strong> /metrics endpoints on a schedule</li>
-                        <li class="fragment fade-up">Service discovery via Kubernetes API (pods, services, endpoints)</li>
-                        <li class="fragment fade-up">Time-series database with PromQL query language</li>
-                        <li class="fragment fade-up">Built-in alerting via Alertmanager integration</li>
+                        <li>Prometheus <strong>scrapes</strong> /metrics endpoints on a schedule</li>
+                        <li>Service discovery via Kubernetes API (pods, services, endpoints)</li>
+                        <li>Time-series database with PromQL query language</li>
+                        <li>Built-in alerting via Alertmanager integration</li>
                     </ul>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Four metric types:</strong> Counter (only goes up), Gauge (arbitrary values), Histogram (bucketed distributions), Summary (quantile calculations)
                 </div>
                 <aside class="notes">Prometheus pulls (scrapes) endpoints on a schedule. It controls the interval, detects down targets, and needs no intermediary. Counters count, gauges measure, histograms bucket distributions, summaries calculate percentiles.</aside>
@@ -456,7 +456,7 @@ spec:
   - port: metrics
     path: /metrics
     interval: 15s</code></pre>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>ServiceMonitor</strong> is a CRD from the Prometheus Operator. It declaratively defines scrape targets instead of editing Prometheus config directly.
                 </div>
                 <aside class="notes">The Prometheus Operator watches for ServiceMonitor resources and auto-updates Prometheus config. The selector must match a K8s Service, and the release label must match the operator's config.</aside>
@@ -541,7 +541,7 @@ container_memory_working_set_bytes / container_spec_memory_limit_bytes</code></p
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Together:</strong> kube-state-metrics tells you what Kubernetes <em>thinks</em>; node-exporter tells you what the node <em>experiences</em>.
                 </div>
                 <aside class="notes">kube-state-metrics listens to the K8s API and generates metrics about object state. node-exporter runs on each node and exports hardware metrics. You need both.</aside>
@@ -553,14 +553,14 @@ container_memory_working_set_bytes / container_spec_memory_limit_bytes</code></p
                 <div class="concept-box">
                     <h4>AWS-Native Observability for EKS</h4>
                     <ul>
-                        <li class="fragment fade-up">Pre-built dashboards for clusters, nodes, pods, services</li>
-                        <li class="fragment fade-up">Automatic collection of CPU, memory, disk, network metrics</li>
-                        <li class="fragment fade-up">Deployed via <strong>CloudWatch Agent</strong> or <strong>ADOT Collector</strong> (DaemonSet)</li>
-                        <li class="fragment fade-up">Integrated with CloudWatch Alarms and SNS notifications</li>
-                        <li class="fragment fade-up">Enhanced observability mode adds Prometheus-compatible metrics</li>
+                        <li>Pre-built dashboards for clusters, nodes, pods, services</li>
+                        <li>Automatic collection of CPU, memory, disk, network metrics</li>
+                        <li>Deployed via <strong>CloudWatch Agent</strong> or <strong>ADOT Collector</strong> (DaemonSet)</li>
+                        <li>Integrated with CloudWatch Alarms and SNS notifications</li>
+                        <li>Enhanced observability mode adds Prometheus-compatible metrics</li>
                     </ul>
                 </div>
-                <pre class="fragment fade-up"><code class="language-bash"># Enable Container Insights with the ADOT add-on
+                <pre><code class="language-bash"># Enable Container Insights with the ADOT add-on
 aws eks create-addon --cluster-name mycompany-prod \
   --addon-name amazon-cloudwatch-observability \
   --addon-version v1.5.0-eksbuild.1</code></pre>
@@ -605,7 +605,7 @@ aws eks create-addon --cluster-name mycompany-prod \
             <!-- Slide 24: OpenTelemetry Overview -->
             <section>
                 <h2>&#127758; OpenTelemetry (OTel)</h2>
-                <div class="three-columns fragment fade-up">
+                <div class="three-columns">
                     <div class="card">
                         <h4>&#128218; SDKs</h4>
                         <ul>
@@ -686,7 +686,7 @@ service:
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up">
+                <div class="highlight-box">
                     <strong>Recommended pattern:</strong> Use X-Ray on EKS for AWS-native visibility. Add Jaeger for advanced trace analysis or self-hosted retention.
                 </div>
                 <aside class="notes">Jaeger gives full control and deep analysis. X-Ray is managed with native AWS integration. ADOT can export to both simultaneously.</aside>
@@ -745,7 +745,7 @@ receivers:
             <section>
                 <h2>&#128232; Enterprise Alerting Destinations</h2>
                 <div class="three-columns">
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#127381; Netcool (Webhook)</h4>
                         <ul>
                             <li>Enterprise event management</li>
@@ -754,7 +754,7 @@ receivers:
                             <li>Maps severity &rarr; Netcool class</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128231; Email (SMTP)</h4>
                         <ul>
                             <li>Built-in <code>email_configs</code> receiver</li>
@@ -763,7 +763,7 @@ receivers:
                             <li>Best for low-urgency / ticket alerts</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128172; WebEx (Webhook)</h4>
                         <ul>
                             <li>WebEx Teams Incoming Webhook</li>
@@ -773,7 +773,7 @@ receivers:
                         </ul>
                     </div>
                 </div>
-                <div class="highlight-box fragment fade-up" style="margin-top: 12px;">
+                <div class="highlight-box" style="margin-top: 12px;">
                     <strong>Routing tree strategy:</strong> <code>severity: critical</code> &rarr; Netcool + WebEx &ensp;|&ensp; <code>severity: warning</code> &rarr; Email + WebEx &ensp;|&ensp; <code>severity: info</code> &rarr; Email only
                 </div>
                 <aside class="notes">Netcool receives alerts via webhook POST to the OMNIbus REST probe. Email uses the SMTP receiver for lower-severity ticket alerts. WebEx uses Incoming Webhook with Adaptive Cards for team visibility. Critical alerts go to Netcool + WebEx; warnings to email + WebEx.</aside>
@@ -815,7 +815,7 @@ receivers:
                     <h4>Multi-Window Burn Rate Strategy</h4>
                     <p>Alert based on how fast you're consuming your error budget, not just on raw error rate</p>
                 </div>
-                <table class="fragment fade-up">
+                <table>
                     <tr>
                         <th>Severity</th>
                         <th>Burn Rate</th>
@@ -861,15 +861,15 @@ receivers:
                 <div class="concept-box">
                     <h4>Step-by-Step Approach</h4>
                     <ol>
-                        <li class="fragment fade-up"><strong>Alert fires</strong> &mdash; check severity, read runbook</li>
-                        <li class="fragment fade-up"><strong>Metrics</strong> &mdash; identify affected service, scope of impact</li>
-                        <li class="fragment fade-up"><strong>Traces</strong> &mdash; find slow/failing spans, isolate the service</li>
-                        <li class="fragment fade-up"><strong>Logs</strong> &mdash; search by trace ID for exact error details</li>
-                        <li class="fragment fade-up"><strong>Kubernetes state</strong> &mdash; <code>kubectl get events</code>, pod status, resource pressure</li>
-                        <li class="fragment fade-up"><strong>Mitigate</strong> &mdash; rollback, scale, or isolate, then fix root cause</li>
+                        <li><strong>Alert fires</strong> &mdash; check severity, read runbook</li>
+                        <li><strong>Metrics</strong> &mdash; identify affected service, scope of impact</li>
+                        <li><strong>Traces</strong> &mdash; find slow/failing spans, isolate the service</li>
+                        <li><strong>Logs</strong> &mdash; search by trace ID for exact error details</li>
+                        <li><strong>Kubernetes state</strong> &mdash; <code>kubectl get events</code>, pod status, resource pressure</li>
+                        <li><strong>Mitigate</strong> &mdash; rollback, scale, or isolate, then fix root cause</li>
                     </ol>
                 </div>
-                <div class="highlight-box danger fragment fade-up">
+                <div class="highlight-box danger">
                     <strong>Anti-pattern:</strong> Jumping straight to <code>kubectl logs</code> without first narrowing the scope via metrics and traces.
                 </div>
                 <aside class="notes">Start broad with metrics, narrow with traces, then use logs for exact errors. K8s events reveal OOMKills, scheduling failures, and image pull errors. Avoid jumping straight to log searching without narrowing scope first.</aside>
@@ -931,12 +931,12 @@ kubectl debug -it &lt;pod-name&gt; --image=nicolaka/netshoot -- bash</code></pre
                 <h2>&#129489;&#8205;&#128187; Lab 9: Observability</h2>
                 <h3>Hands-On Exercise</h3>
                 <ul>
-                    <li class="fragment fade-up">Explore kubectl logs flags and multi-container pod logging</li>
-                    <li class="fragment fade-up">Deploy structured JSON logging and filter with jq</li>
-                    <li class="fragment fade-up">Run PromQL queries for CPU, memory, and pod metrics</li>
-                    <li class="fragment fade-up">Navigate Grafana dashboards to investigate workload resources</li>
-                    <li class="fragment fade-up">Create a PrometheusRule alert for pod restarts</li>
-                    <li class="fragment fade-up">Debug a failing application using events, logs, and metrics</li>
+                    <li>Explore kubectl logs flags and multi-container pod logging</li>
+                    <li>Deploy structured JSON logging and filter with jq</li>
+                    <li>Run PromQL queries for CPU, memory, and pod metrics</li>
+                    <li>Navigate Grafana dashboards to investigate workload resources</li>
+                    <li>Create a PrometheusRule alert for pod restarts</li>
+                    <li>Debug a failing application using events, logs, and metrics</li>
                 </ul>
                 <div class="highlight-box" style="margin-top: 20px;">
                     <strong>Duration:</strong> ~45-55 minutes
@@ -947,16 +947,16 @@ kubectl debug -it &lt;pod-name&gt; --image=nicolaka/netshoot -- bash</code></pre
             <!-- Slide 36: Key Takeaways -->
             <section>
                 <h2>&#127919; Key Takeaways</h2>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>1. Correlate across all three pillars.</strong> Use trace IDs to link logs, metrics, and traces. Without correlation, you have three separate silos.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>2. Structured logging is essential.</strong> JSON logs with consistent fields enable automated parsing, filtering, and alerting.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>3. Alert on SLOs, not symptoms.</strong> Burn rate alerting reduces noise and focuses on user-facing impact.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>4. Instrument with OpenTelemetry.</strong> Vendor-neutral instrumentation decouples your code from any specific backend.
                 </div>
                 <aside class="notes">Correlation turns three data streams into observability. Structured logging enables search and query. SLO-based alerting reduces fatigue. OTel future-proofs instrumentation.</aside>

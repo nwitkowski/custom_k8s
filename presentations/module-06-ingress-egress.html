@@ -96,13 +96,13 @@
             <section>
                 <h2>&#128203; Module Agenda</h2>
                 <ul>
-                    <li class="fragment fade-up">Why External Access Matters</li>
-                    <li class="fragment fade-up">NGINX Ingress Controller &amp; IngressClass</li>
-                    <li class="fragment fade-up">Ingress Resources: Path-Based &amp; Host-Based Routing</li>
-                    <li class="fragment fade-up">Annotations, TLS Termination &amp; cert-manager</li>
-                    <li class="fragment fade-up">Gateway API: GatewayClass, Gateway, HTTPRoute</li>
-                    <li class="fragment fade-up">Traffic Splitting and Canary Deployments</li>
-                    <li class="fragment fade-up">Enterprise Integration &amp; Egress Controls</li>
+                    <li>Why External Access Matters</li>
+                    <li>NGINX Ingress Controller &amp; IngressClass</li>
+                    <li>Ingress Resources: Path-Based &amp; Host-Based Routing</li>
+                    <li>Annotations, TLS Termination &amp; cert-manager</li>
+                    <li>Gateway API: GatewayClass, Gateway, HTTPRoute</li>
+                    <li>Traffic Splitting and Canary Deployments</li>
+                    <li>Enterprise Integration &amp; Egress Controls</li>
                 </ul>
                 <aside class="notes">We start with NGINX Ingress, then show how Gateway API improves upon it, and finish with egress controls.</aside>
             </section>
@@ -121,10 +121,10 @@
                         <tr><th>Method</th><th>Layer</th><th>Use Case</th><th>Limitation</th></tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up"><td><code>NodePort</code></td><td>L4</td><td>Dev/testing</td><td>Port range 30000-32767, exposed on all nodes</td></tr>
-                        <tr class="fragment fade-up"><td><code>LoadBalancer</code></td><td>L4</td><td>Single service exposure</td><td>One LB per service ($$$), no path routing</td></tr>
-                        <tr class="fragment fade-up"><td><strong>Ingress</strong></td><td>L7</td><td>HTTP/HTTPS routing</td><td>HTTP-only, limited extensibility</td></tr>
-                        <tr class="fragment fade-up"><td><strong>Gateway API</strong></td><td>L4-L7</td><td>Advanced routing</td><td>Newer, still maturing ecosystem</td></tr>
+                        <tr><td><code>NodePort</code></td><td>L4</td><td>Dev/testing</td><td>Port range 30000-32767, exposed on all nodes</td></tr>
+                        <tr><td><code>LoadBalancer</code></td><td>L4</td><td>Single service exposure</td><td>One LB per service ($$$), no path routing</td></tr>
+                        <tr><td><strong>Ingress</strong></td><td>L7</td><td>HTTP/HTTPS routing</td><td>HTTP-only, limited extensibility</td></tr>
+                        <tr><td><strong>Gateway API</strong></td><td>L4-L7</td><td>Advanced routing</td><td>Newer, still maturing ecosystem</td></tr>
                     </tbody>
                 </table>
                 <aside class="notes">Tip: On AWS EKS, each LoadBalancer Service provisions a dedicated NLB/ALB (~$16/month + data). Ingress consolidates many services behind one load balancer. Gateway API is the next generation.</aside>
@@ -142,11 +142,11 @@
                 <div class="concept-box">
                     <h4>How It Works</h4>
                     <ol>
-                        <li class="fragment fade-up">NGINX Ingress Controller pod runs NGINX reverse proxy</li>
-                        <li class="fragment fade-up">Exposed via a <code>LoadBalancer</code> Service (single AWS NLB/ALB)</li>
-                        <li class="fragment fade-up">Watches for Ingress resources across the cluster</li>
-                        <li class="fragment fade-up">Dynamically generates NGINX configuration from Ingress rules</li>
-                        <li class="fragment fade-up">Reloads NGINX when Ingress resources change</li>
+                        <li>NGINX Ingress Controller pod runs NGINX reverse proxy</li>
+                        <li>Exposed via a <code>LoadBalancer</code> Service (single AWS NLB/ALB)</li>
+                        <li>Watches for Ingress resources across the cluster</li>
+                        <li>Dynamically generates NGINX configuration from Ingress rules</li>
+                        <li>Reloads NGINX when Ingress resources change</li>
                     </ol>
                 </div>
                 <aside class="notes">Tip: IngressClass specifies which controller handles an Ingress. Multiple controllers can coexist (e.g., internal vs external). Critical in environments where you might have separate internal and external ingress controllers.</aside>
@@ -154,7 +154,7 @@
 
             <section>
                 <h2>&#128295; IngressClass Configuration</h2>
-                <pre class="fragment fade-up"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+                <pre><code class="language-yaml">apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
   name: nginx-external
@@ -168,7 +168,7 @@ kind: IngressClass
 metadata: { name: nginx-internal }
 spec:
   controller: k8s.io/ingress-nginx-internal</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Recommended Pattern:</strong> Run separate IngressClasses for external (internet-facing) and internal (VPC-only) traffic, each with its own controller and load balancer.
                 </div>
                 <aside class="notes">IngressClass is mandatory in modern Kubernetes. It decouples the Ingress resource from the controller. Setting is-default-class means any Ingress without an explicit ingressClassName gets picked up by that controller.</aside>
@@ -183,7 +183,7 @@ spec:
 
             <section>
                 <h2>&#128208; Path-Based Routing</h2>
-                <pre class="fragment fade-up"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+                <pre><code class="language-yaml">apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: app-ingress
@@ -205,7 +205,7 @@ spec:
 
             <section>
                 <h2>&#127760; Host-Based Routing</h2>
-                <pre class="fragment fade-up"><code class="language-yaml">kind: Ingress
+                <pre><code class="language-yaml">kind: Ingress
 # ...
 spec:
   ingressClassName: nginx-external
@@ -230,17 +230,17 @@ spec:
                         <tr><th>pathType</th><th>Matching Behavior</th><th>Example</th></tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><code>Exact</code></td>
                             <td>Matches URL path exactly</td>
                             <td><code>/api</code> matches <code>/api</code> only, not <code>/api/v1</code></td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><code>Prefix</code></td>
                             <td>Matches path prefix by <code>/</code> segments</td>
                             <td><code>/api</code> matches <code>/api</code>, <code>/api/v1</code>, <code>/api/v1/users</code></td>
                         </tr>
-                        <tr class="fragment fade-up">
+                        <tr>
                             <td><code>ImplementationSpecific</code></td>
                             <td>Depends on IngressClass controller</td>
                             <td>NGINX supports regex: <code>/api(/|$)(.*)</code></td>
@@ -259,7 +259,7 @@ spec:
 
             <section>
                 <h2>&#128295; Essential NGINX Ingress Annotations</h2>
-                <pre class="fragment fade-up"><code class="language-yaml">annotations:
+                <pre><code class="language-yaml">annotations:
   nginx.ingress.kubernetes.io/ssl-redirect: "true"
   nginx.ingress.kubernetes.io/proxy-body-size: "50m"
   nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
@@ -282,7 +282,7 @@ spec:
   nginx.ingress.kubernetes.io/
     session-cookie-max-age: "172800"</code></pre>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>Custom Headers &amp; Snippets</h4>
                         <pre><code class="language-yaml">annotations:
   nginx.ingress.kubernetes.io/
@@ -359,13 +359,13 @@ spec:
                         <tr><th>Aspect</th><th>Ingress</th><th>Gateway API</th></tr>
                     </thead>
                     <tbody>
-                        <tr class="fragment fade-up"><td>Extensibility</td><td>Annotations (untyped strings)</td><td>Typed, structured API fields</td></tr>
-                        <tr class="fragment fade-up"><td>Role model</td><td>Single resource, one owner</td><td>Role-oriented (infra, cluster, app)</td></tr>
-                        <tr class="fragment fade-up"><td>Protocols</td><td>HTTP/HTTPS only</td><td>HTTP, TCP, UDP, gRPC, TLS</td></tr>
-                        <tr class="fragment fade-up"><td>Traffic splitting</td><td>Not native</td><td>Built-in weight-based routing</td></tr>
-                        <tr class="fragment fade-up"><td>Header matching</td><td>Not supported</td><td>Native header/query matching</td></tr>
-                        <tr class="fragment fade-up"><td>Portability</td><td>Vendor-specific annotations</td><td>Portable across implementations</td></tr>
-                        <tr class="fragment fade-up"><td>Status</td><td>Stable, feature-frozen</td><td>GA (HTTPRoute), evolving</td></tr>
+                        <tr><td>Extensibility</td><td>Annotations (untyped strings)</td><td>Typed, structured API fields</td></tr>
+                        <tr><td>Role model</td><td>Single resource, one owner</td><td>Role-oriented (infra, cluster, app)</td></tr>
+                        <tr><td>Protocols</td><td>HTTP/HTTPS only</td><td>HTTP, TCP, UDP, gRPC, TLS</td></tr>
+                        <tr><td>Traffic splitting</td><td>Not native</td><td>Built-in weight-based routing</td></tr>
+                        <tr><td>Header matching</td><td>Not supported</td><td>Native header/query matching</td></tr>
+                        <tr><td>Portability</td><td>Vendor-specific annotations</td><td>Portable across implementations</td></tr>
+                        <tr><td>Status</td><td>Stable, feature-frozen</td><td>GA (HTTPRoute), evolving</td></tr>
                     </tbody>
                 </table>
                 <aside class="notes">Gateway API addresses the major pain points of Ingress: typed fields instead of annotations, role separation, multi-protocol support, and native traffic management. The Ingress API is feature-frozen.</aside>
@@ -374,21 +374,21 @@ spec:
             <section>
                 <h2>&#127959;&#65039; Gateway API Resource Model</h2>
                 <div class="three-columns">
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128736;&#65039; GatewayClass</h4>
                         <p style="font-size: 0.85em;"><strong>Role:</strong> Infrastructure Provider</p>
                         <ul>
                             <li>Defines controller implementation (cluster-scoped)</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128310; Gateway</h4>
                         <p style="font-size: 0.85em;"><strong>Role:</strong> Cluster Operator</p>
                         <ul>
                             <li>Configures listeners, TLS, and provisions LB</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128208; HTTPRoute</h4>
                         <p style="font-size: 0.85em;"><strong>Role:</strong> Application Developer</p>
                         <ul>
@@ -396,7 +396,7 @@ spec:
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Role Separation:</strong> Infrastructure teams manage GatewayClass and Gateway. Application teams create HTTPRoutes. RBAC applies cleanly at each level.
                 </div>
                 <aside class="notes">The three-tier model is Gateway API's biggest advantage. Each role has clear boundaries and RBAC applies at each level, unlike Ingress where one resource mixes all concerns.</aside>
@@ -404,7 +404,7 @@ spec:
 
             <section>
                 <h2>&#128310; GatewayClass and Gateway</h2>
-                <pre class="fragment fade-up"><code class="language-yaml"># GatewayClass is typically pre-installed by the platform
+                <pre><code class="language-yaml"># GatewayClass is typically pre-installed by the platform
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata: { name: mycompany-gateway, namespace: gateway-system }
@@ -431,7 +431,7 @@ spec:
 
             <section>
                 <h2>&#128208; HTTPRoute Resource</h2>
-                <pre class="fragment fade-up"><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
+                <pre><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata: { name: api-routes, namespace: mycompany-apps }
 spec:
@@ -459,7 +459,7 @@ spec:
             <section>
                 <h2>&#9878;&#65039; Canary Routing with HTTPRoute</h2>
                 <h4>Weight-Based</h4>
-                <pre class="fragment fade-up"><code class="language-yaml">kind: HTTPRoute
+                <pre><code class="language-yaml">kind: HTTPRoute
 # ...
 spec:
   parentRefs:
@@ -471,7 +471,7 @@ spec:
     - { name: dns-service-stable, port: 8080, weight: 90 }
     - { name: dns-service-canary, port: 8080, weight: 10 }</code></pre>
                 <h4>Header-Based</h4>
-                <pre class="fragment fade-up"><code class="language-yaml">kind: HTTPRoute
+                <pre><code class="language-yaml">kind: HTTPRoute
 # ...
 rules:
 - matches:
@@ -531,7 +531,7 @@ rules:
             <section>
                 <h2>&#128282; Why Egress Controls Matter</h2>
                 <div class="two-columns">
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128737;&#65039; Security Concerns</h4>
                         <ul>
                             <li>Compromised pods phoning home or exfiltrating data</li>
@@ -539,7 +539,7 @@ rules:
                             <li>Compliance requirements (PCI-DSS, SOC2)</li>
                         </ul>
                     </div>
-                    <div class="card fragment fade-up">
+                    <div class="card">
                         <h4>&#128295; Control Mechanisms</h4>
                         <ul>
                             <li><strong>NetworkPolicy egress rules</strong> (Module 8)</li>
@@ -556,7 +556,7 @@ rules:
                 <div class="concept-box">
                     <h4>Common Egress Architectures</h4>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>NAT Gateway (Default EKS)</h4>
                         <pre><code class="language-text">Pod → Node → NAT GW → Internet
@@ -587,12 +587,12 @@ volumeMounts:
                 <h2>&#129489;&#8205;&#128187; Lab 6: Ingress and Gateway API</h2>
                 <h3>Hands-On Exercise</h3>
                 <ul>
-                    <li class="fragment fade-up">Verify the NGINX Ingress Controller and IngressClass</li>
-                    <li class="fragment fade-up">Create host-based and path-based Ingress resources</li>
-                    <li class="fragment fade-up">Configure TLS termination with a self-signed certificate</li>
-                    <li class="fragment fade-up">Test Ingress annotations: rate limiting, CORS, rewrite</li>
-                    <li class="fragment fade-up"><em>Optional:</em> Deploy Gateway API resources with HTTPRoute traffic splitting</li>
-                    <li class="fragment fade-up"><em>Optional:</em> Configure egress NetworkPolicies to control outbound traffic</li>
+                    <li>Verify the NGINX Ingress Controller and IngressClass</li>
+                    <li>Create host-based and path-based Ingress resources</li>
+                    <li>Configure TLS termination with a self-signed certificate</li>
+                    <li>Test Ingress annotations: rate limiting, CORS, rewrite</li>
+                    <li><em>Optional:</em> Deploy Gateway API resources with HTTPRoute traffic splitting</li>
+                    <li><em>Optional:</em> Configure egress NetworkPolicies to control outbound traffic</li>
                 </ul>
                 <div class="highlight-box" style="margin-top: 20px;">
                     <strong>Duration:</strong> ~30-40 minutes
@@ -603,16 +603,16 @@ volumeMounts:
             <!-- Key Takeaways -->
             <section>
                 <h2>&#127919; Key Takeaways</h2>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>1. Consolidate with Ingress/Gateway</strong> &mdash; Avoid one LoadBalancer per service. Route through a shared entry point.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>2. Gateway API is the future</strong> &mdash; Typed resources, role separation, and native traffic management replace annotation-driven Ingress.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>3. Automate TLS</strong> &mdash; Use cert-manager for certificate lifecycle. Avoid managing certificates manually.
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>4. Control egress too</strong> &mdash; Ingress is only half the story. Egress controls are critical for security and compliance.
                 </div>
                 <aside class="notes">Four takeaways: consolidate external access, adopt Gateway API, automate certificate management, and don't forget egress controls.</aside>

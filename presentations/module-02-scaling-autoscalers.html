@@ -103,13 +103,13 @@
             <section>
                 <h2>&#127919; Module Objectives</h2>
                 <ul>
-                    <li class="fragment fade-up">Understand why resource requests and limits are the foundation of scaling</li>
-                    <li class="fragment fade-up">Explain how the Metrics Server collects and serves resource data</li>
-                    <li class="fragment fade-up">Configure Horizontal Pod Autoscaler (HPA) with the <code>autoscaling/v2</code> API</li>
-                    <li class="fragment fade-up">Calculate expected scaling using the HPA algorithm</li>
-                    <li class="fragment fade-up">Tune scaling behavior with stabilization windows and policies</li>
-                    <li class="fragment fade-up">Understand VPA and Cluster Autoscaler, and when KEDA is appropriate</li>
-                    <li class="fragment fade-up">Monitor scaling with <code>kubectl top</code> and Prometheus</li>
+                    <li>Understand why resource requests and limits are the foundation of scaling</li>
+                    <li>Explain how the Metrics Server collects and serves resource data</li>
+                    <li>Configure Horizontal Pod Autoscaler (HPA) with the <code>autoscaling/v2</code> API</li>
+                    <li>Calculate expected scaling using the HPA algorithm</li>
+                    <li>Tune scaling behavior with stabilization windows and policies</li>
+                    <li>Understand VPA and Cluster Autoscaler, and when KEDA is appropriate</li>
+                    <li>Monitor scaling with <code>kubectl top</code> and Prometheus</li>
                 </ul>
                 <aside class="notes">HPA is the core of this module. VPA and KEDA are conceptual overviews.</aside>
             </section>
@@ -142,7 +142,7 @@
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>The goal:</strong> Right-size automatically based on real demand, not guesswork.
                 </div>
                 <aside class="notes">Over-provisioning wastes money. Under-provisioning causes outages. Autoscaling finds the balance.</aside>
@@ -162,23 +162,23 @@
                     <div class="card">
                         <h4>Requests (Guaranteed)</h4>
                         <ul>
-                            <li class="fragment fade-up">What the scheduler uses for placement</li>
-                            <li class="fragment fade-up">Guaranteed minimum resources</li>
-                            <li class="fragment fade-up">Used by HPA for percentage calculations</li>
-                            <li class="fragment fade-up"><strong>Must</strong> be set for HPA to work</li>
+                            <li>What the scheduler uses for placement</li>
+                            <li>Guaranteed minimum resources</li>
+                            <li>Used by HPA for percentage calculations</li>
+                            <li><strong>Must</strong> be set for HPA to work</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h4>Limits (Maximum)</h4>
                         <ul>
-                            <li class="fragment fade-up">Enforced ceiling the container cannot exceed</li>
-                            <li class="fragment fade-up">CPU: throttled when exceeded</li>
-                            <li class="fragment fade-up">Memory: OOMKilled when exceeded</li>
-                            <li class="fragment fade-up">Protects neighbors on the same node</li>
+                            <li>Enforced ceiling the container cannot exceed</li>
+                            <li>CPU: throttled when exceeded</li>
+                            <li>Memory: OOMKilled when exceeded</li>
+                            <li>Protects neighbors on the same node</li>
                         </ul>
                     </div>
                 </div>
-                <pre class="fragment fade-up"><code class="language-yaml">resources:
+                <pre><code class="language-yaml">resources:
   requests:
     cpu: "250m"       # 0.25 CPU cores guaranteed
     memory: "256Mi"   # 256 MiB guaranteed
@@ -300,14 +300,14 @@ containers:
                 <div class="concept-box">
                     <h4>How metrics flow through the system</h4>
                     <ol>
-                        <li class="fragment fade-up"><strong>kubelet</strong> collects resource usage from the container runtime (containerd)</li>
-                        <li class="fragment fade-up"><strong>Metrics Server</strong> scrapes kubelet's <code>/metrics/resource</code> endpoint on a short, configurable interval (15s by default)</li>
-                        <li class="fragment fade-up"><strong>Metrics Server</strong> aggregates and serves data via the <code>metrics.k8s.io</code> API</li>
-                        <li class="fragment fade-up"><strong>HPA controller</strong> queries <code>metrics.k8s.io</code> every 15 seconds (default)</li>
-                        <li class="fragment fade-up"><strong>HPA controller</strong> calculates desired replicas and patches the Deployment</li>
+                        <li><strong>kubelet</strong> collects resource usage from the container runtime (containerd)</li>
+                        <li><strong>Metrics Server</strong> scrapes kubelet's <code>/metrics/resource</code> endpoint on a short, configurable interval (15s by default)</li>
+                        <li><strong>Metrics Server</strong> aggregates and serves data via the <code>metrics.k8s.io</code> API</li>
+                        <li><strong>HPA controller</strong> queries <code>metrics.k8s.io</code> every 15 seconds (default)</li>
+                        <li><strong>HPA controller</strong> calculates desired replicas and patches the Deployment</li>
                     </ol>
                 </div>
-                <pre class="fragment fade-up"><code class="language-bash"># Verify Metrics Server is running
+                <pre><code class="language-bash"># Verify Metrics Server is running
 kubectl get deployment metrics-server -n kube-system
 
 # Check metrics API availability
@@ -353,7 +353,7 @@ myapp-7d4b8c6f5-ghi56    38m         122Mi</code></pre>
                         desiredReplicas = ⌈ currentReplicas &times; ( currentMetric / desiredMetric ) ⌉
                     </p>
                 </div>
-                <div class="fragment fade-up">
+                <div>
                     <h4>Example Calculation</h4>
                     <table>
                         <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
@@ -373,12 +373,12 @@ myapp-7d4b8c6f5-ghi56    38m         122Mi</code></pre>
             <section>
                 <h2>&#128290; HPA Algorithm — Edge Cases</h2>
                 <ul>
-                    <li class="fragment fade-up"><strong>Tolerance zone (±10%):</strong> HPA won't scale if the ratio is within 0.9–1.1 of the target. This prevents flapping.</li>
-                    <li class="fragment fade-up"><strong>Missing metrics:</strong> Pods with missing metrics are treated conservatively — scale-down assumes 100% utilization, scale-up assumes 0%.</li>
-                    <li class="fragment fade-up"><strong>Unready pods:</strong> Excluded from the metric average during scale-up (included for scale-down).</li>
-                    <li class="fragment fade-up"><strong>Multiple metrics:</strong> HPA evaluates each metric independently and takes the <em>maximum</em> desired replica count.</li>
+                    <li><strong>Tolerance zone (±10%):</strong> HPA won't scale if the ratio is within 0.9–1.1 of the target. This prevents flapping.</li>
+                    <li><strong>Missing metrics:</strong> Pods with missing metrics are treated conservatively — scale-down assumes 100% utilization, scale-up assumes 0%.</li>
+                    <li><strong>Unready pods:</strong> Excluded from the metric average during scale-up (included for scale-down).</li>
+                    <li><strong>Multiple metrics:</strong> HPA evaluates each metric independently and takes the <em>maximum</em> desired replica count.</li>
                 </ul>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>The 10% tolerance band</strong> is critical for stability. If your target is 50% CPU and current usage is between 45%–55%, the HPA takes no action. This prevents constant scaling oscillation.
                 </div>
                 <aside class="notes">These edge cases make HPA stable. The tolerance zone prevents flapping. Conservative handling of missing metrics prevents inappropriate scale-down. Key details for troubleshooting.</aside>
@@ -448,7 +448,7 @@ spec:
                     <h4>How Stabilization Works</h4>
                     <p>The HPA examines all computed replica counts within the window and selects the highest.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>Scale-Up Window</h4>
                         <ul>
@@ -526,7 +526,7 @@ $ kubectl get events --field-selector involvedObject.name=myapp-hpa</code></pre>
                     <h4>What VPA does</h4>
                     <p>VPA automatically adjusts CPU and memory <strong>requests and limits</strong> for pods based on observed usage patterns.</p>
                 </div>
-                <div class="three-columns fragment fade-up">
+                <div class="three-columns">
                     <div class="card">
                         <h4>Recommender</h4>
                         <p style="font-size: 0.85em;">Watches resource usage and computes optimal requests/limits</p>
@@ -581,7 +581,7 @@ $ kubectl get events --field-selector involvedObject.name=myapp-hpa</code></pre>
                     </tbody>
                 </table>
                 <h4>Example Configuration</h4>
-                <pre class="fragment fade-up"><code class="language-yaml"># Key section: VPA spec
+                <pre><code class="language-yaml"># Key section: VPA spec
 spec:
   targetRef: { apiVersion: apps/v1, kind: Deployment, name: myapp }
   updatePolicy:
@@ -600,7 +600,7 @@ spec:
                 <div class="highlight-box danger">
                     <strong>Do NOT</strong> use VPA (Auto mode) and HPA on the same metrics (CPU/memory) simultaneously. They will fight each other.
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>&#10060; Conflicting Setup</h4>
                         <ul>
@@ -636,7 +636,7 @@ spec:
                     <h4>HPA and VPA scale pods — but pods need nodes to run on</h4>
                     <p>When pods stay <strong>Pending</strong> because no node has enough CPU/memory, the Cluster Autoscaler adds nodes. When nodes sit underutilized, it removes them.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>&#10133; Scale Up</h4>
                         <ul>
@@ -654,7 +654,7 @@ spec:
                         </ul>
                     </div>
                 </div>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>On EKS:</strong> Cluster Autoscaler drives node group capacity; <strong>Karpenter</strong> is a modern alternative that provisions right-sized nodes directly from pending-pod requirements.
                 </div>
                 <aside class="notes">Cluster Autoscaler is node-level, not pod-level: it reacts to unschedulable (Pending) pods by adding nodes and consolidates by removing idle ones. In Lab 2 you trigger this by requesting more CPU than the cluster can schedule and watch new nodes join (2-5 minutes). Karpenter is the newer EKS-native approach.</aside>
@@ -674,7 +674,7 @@ spec:
                     <h4>What KEDA adds beyond HPA</h4>
                     <p>KEDA is a lightweight component that can scale Kubernetes workloads based on <strong>external event sources</strong> — and can scale to <strong>zero</strong>.</p>
                 </div>
-                <div class="two-columns fragment fade-up">
+                <div class="two-columns">
                     <div class="card">
                         <h4>KEDA Capabilities</h4>
                         <ul>
@@ -709,7 +709,7 @@ spec:
     metadata:
       queueLength: "5"           # Target 5 messages per pod
     # ...</code></pre>
-                <div class="key-point fragment fade-up">
+                <div class="key-point">
                     <strong>Scale-to-zero:</strong> When the queue is empty, KEDA scales to 0 replicas. When messages arrive, it scales back up -- reducing costs for bursty workloads.
                 </div>
                 <aside class="notes">queueLength of 5 means KEDA targets 5 messages per pod — 50 messages = 10 pods.</aside>
@@ -758,7 +758,7 @@ spec:
                     </tbody>
                 </table>
                 <h4>PromQL Example</h4>
-                <pre class="fragment fade-up"><code class="language-promql"># CPU utilization as percentage of request
+                <pre><code class="language-promql"># CPU utilization as percentage of request
 sum(rate(container_cpu_usage_seconds_total{
   pod=~"myapp.*"}[5m])) by (pod)
 /
@@ -841,13 +841,13 @@ spec:
                 <h2>&#128218; Module 2 — Key Takeaways</h2>
                 <div class="concept-box">
                     <ul>
-                        <li class="fragment fade-up"><strong>Resource requests are the foundation</strong> — HPA can't work without them</li>
-                        <li class="fragment fade-up"><strong>Metrics Server</strong> provides real-time CPU/memory data for the HPA algorithm</li>
-                        <li class="fragment fade-up"><strong>HPA algorithm:</strong> desiredReplicas = ⌈currentReplicas &times; (current/desired)⌉ with ±10% tolerance</li>
-                        <li class="fragment fade-up"><strong>autoscaling/v2</strong> supports multiple metrics, custom metrics, and behavior policies</li>
-                        <li class="fragment fade-up"><strong>Scale up fast, scale down slow</strong> — the golden rule of behavior tuning</li>
-                        <li class="fragment fade-up"><strong>VPA</strong> right-sizes pods (Off mode with HPA); <strong>KEDA</strong> enables scale-to-zero</li>
-                        <li class="fragment fade-up"><strong>~55+ seconds</strong> from spike to new pod serving traffic — plan headroom accordingly</li>
+                        <li><strong>Resource requests are the foundation</strong> — HPA can't work without them</li>
+                        <li><strong>Metrics Server</strong> provides real-time CPU/memory data for the HPA algorithm</li>
+                        <li><strong>HPA algorithm:</strong> desiredReplicas = ⌈currentReplicas &times; (current/desired)⌉ with ±10% tolerance</li>
+                        <li><strong>autoscaling/v2</strong> supports multiple metrics, custom metrics, and behavior policies</li>
+                        <li><strong>Scale up fast, scale down slow</strong> — the golden rule of behavior tuning</li>
+                        <li><strong>VPA</strong> right-sizes pods (Off mode with HPA); <strong>KEDA</strong> enables scale-to-zero</li>
+                        <li><strong>~55+ seconds</strong> from spike to new pod serving traffic — plan headroom accordingly</li>
                     </ul>
                 </div>
                 <aside class="notes">Key points: always set resource requests, use autoscaling/v2, tune behavior policies, monitor HPA status.</aside>

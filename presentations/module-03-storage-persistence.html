@@ -242,41 +242,9 @@
                 <aside class="notes">hostPath is a security risk and ties pods to specific nodes — use only for system-level DaemonSets. PVC is the path to real persistence.</aside>
             </section>
 
-            <!-- Slide 8: emptyDir and hostPath Examples -->
-            <section>
-                <h2>&#128221; emptyDir &amp; hostPath in Practice</h2>
-                <pre><code class="language-yaml"># emptyDir — shared scratch space between containers
-spec:
-  containers:
-  - name: app
-    volumeMounts:
-    - { name: shared-logs, mountPath: /var/log/app }
-  - name: log-shipper
-    volumeMounts:
-    - { name: shared-logs, mountPath: /var/log/app, readOnly: true }
-  volumes:
-  - name: shared-logs
-    emptyDir: { sizeLimit: 500Mi }</code></pre>
-                <aside class="notes">The app writes logs and the sidecar reads and ships them via a shared emptyDir. sizeLimit prevents runaway disk usage. Can also use emptyDir.medium: Memory for tmpfs-backed storage.</aside>
-            </section>
-
             <!-- Slide 9: PersistentVolume Deep Dive -->
             <section>
                 <h2>&#128451; PersistentVolume (PV) Deep Dive</h2>
-                <pre><code class="language-yaml">apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: pv-ebs-01
-spec:
-  capacity: { storage: 50Gi }
-  volumeMode: Filesystem
-  accessModes: ["ReadWriteOnce"]
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: gp3
-  csi:
-    driver: ebs.csi.aws.com
-    volumeHandle: vol-0abc123def456789
-    fsType: ext4</code></pre>
                 <ul>
                     <li><strong>capacity</strong> — how much storage the volume provides</li>
                     <li><strong>accessModes</strong> — who can mount and how (RWO, ROX, RWX)</li>
@@ -284,36 +252,6 @@ spec:
                     <li><strong>storageClassName</strong> — links to a StorageClass for dynamic provisioning</li>
                 </ul>
                 <aside class="notes">PVs are cluster-scoped. You'll rarely create them manually — dynamic provisioning handles that — but understanding the PV spec is essential for troubleshooting.</aside>
-            </section>
-
-            <!-- Slide 10: PersistentVolumeClaim Deep Dive -->
-            <section>
-                <h2>&#128196; PersistentVolumeClaim (PVC) Deep Dive</h2>
-                <pre><code class="language-yaml">apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-data
-  namespace: my-team
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: gp3
-  resources:
-    requests:
-      storage: 50Gi</code></pre>
-                <pre><code class="language-yaml"># Reference in a Pod spec
-spec:
-  containers:
-  - name: postgres
-    image: postgres:16
-    volumeMounts:
-    - name: data
-      mountPath: /var/lib/postgresql/data
-  volumes:
-  - name: data
-    persistentVolumeClaim:
-      claimName: postgres-data</code></pre>
-                <aside class="notes">The PVC is the developer-facing resource. Specify access mode, storage class, and size — Kubernetes finds or creates a matching PV. PVCs are namespace-scoped. The pod references the PVC by name.</aside>
             </section>
 
             <!-- Slide 11: PVC Binding Lifecycle -->
@@ -329,12 +267,6 @@ spec:
                         <li><strong>Reclaimed</strong> — PV is deleted, retained, or recycled per reclaim policy</li>
                     </ol>
                 </div>
-                <pre><code class="language-bash"># Inspect PVC status
-kubectl get pvc postgres-data
-# NAME            STATUS   VOLUME     CAPACITY   ACCESS MODES   STORAGECLASS
-# postgres-data   Bound    pvc-a1b2   50Gi       RWO            gp3
-
-kubectl describe pvc postgres-data | grep -A2 Events</code></pre>
                 <aside class="notes">Most common issue: PVC stuck in Pending. Usually means wrong StorageClass, insufficient capacity, or provisioner not running. Always check kubectl describe pvc events.</aside>
             </section>
 
@@ -415,20 +347,6 @@ kubectl describe pvc postgres-data | grep -A2 Events</code></pre>
             <!-- Slide 15: StorageClass Anatomy -->
             <section>
                 <h2>&#128736;&#65039; StorageClass Anatomy</h2>
-                <pre><code class="language-yaml">apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: gp3
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: ebs.csi.aws.com
-parameters:
-  type: gp3
-  encrypted: "true"
-  fsType: ext4
-reclaimPolicy: Retain
-allowVolumeExpansion: true
-volumeBindingMode: WaitForFirstConsumer</code></pre>
                 <ul>
                     <li><strong>provisioner</strong> — which CSI driver creates the volumes</li>
                     <li><strong>parameters</strong> — passed to the provisioner (EBS type, encryption, etc.)</li>
@@ -444,15 +362,6 @@ volumeBindingMode: WaitForFirstConsumer</code></pre>
                 <div class="two-columns">
                     <div class="card">
                         <h4>gp3 — General Purpose</h4>
-                        <pre><code class="language-yaml">kind: StorageClass
-metadata: { name: gp3 }
-provisioner: ebs.csi.aws.com
-parameters:
-  type: gp3
-  encrypted: "true"
-reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
-allowVolumeExpansion: true</code></pre>
                         <ul>
                             <li>3,000 IOPS, 125 MB/s baseline</li>
                             <li>Best for most workloads</li>
@@ -460,15 +369,6 @@ allowVolumeExpansion: true</code></pre>
                     </div>
                     <div class="card">
                         <h4>io2 — High Performance</h4>
-                        <pre><code class="language-yaml">kind: StorageClass
-metadata: { name: io2-high-perf }
-provisioner: ebs.csi.aws.com
-parameters:
-  type: io2
-  iopsPerGB: "50"
-  encrypted: "true"
-reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer</code></pre>
                         <ul>
                             <li>Up to 64,000 IOPS, 99.999% durability</li>
                             <li>Latency-sensitive databases</li>
@@ -481,15 +381,6 @@ volumeBindingMode: WaitForFirstConsumer</code></pre>
             <!-- Slide 17: AWS EFS CSI Driver -->
             <section>
                 <h2>&#128193; AWS EFS CSI Driver for Shared Storage</h2>
-                <pre><code class="language-yaml">kind: StorageClass
-metadata: { name: efs-sc }
-provisioner: efs.csi.aws.com
-parameters:
-  provisioningMode: efs-ap
-  fileSystemId: fs-0abc123def456789
-  directoryPerms: "700"
-  # ... gidRangeStart, gidRangeEnd
-mountOptions: [tls]</code></pre>
                 <div class="two-columns">
                     <div class="highlight-box success">
                         <strong>EFS Strengths:</strong> ReadWriteMany, auto-scaling capacity, cross-AZ, shared access across pods and nodes
@@ -515,10 +406,6 @@ mountOptions: [tls]</code></pre>
                         <li>The volume is <strong>attached</strong> to the node and <strong>mounted</strong> into the pod</li>
                     </ol>
                 </div>
-                <pre><code class="language-bash"># Watch the provisioning happen in real time
-kubectl get pvc -w
-kubectl get pv
-kubectl describe pvc my-claim  # Check events for provisioning status</code></pre>
                 <aside class="notes">Fully automated. With WaitForFirstConsumer, steps 3-6 happen together — the volume isn't created until a pod needs it, avoiding AZ mismatches and unused volumes.</aside>
             </section>
 
@@ -603,43 +490,9 @@ kubectl describe pvc my-claim  # Check events for provisioning status</code></pr
                 <aside class="notes">In a Deployment, pods are interchangeable. In a StatefulSet, each pod has a unique identity, stable hostname, and its own volume. Databases need this — replica-0 is the primary, others are secondaries.</aside>
             </section>
 
-            <!-- Slide 22: StatefulSet Anatomy -->
-            <section>
-                <h2>&#128736;&#65039; StatefulSet YAML Anatomy</h2>
-                <pre><code class="language-yaml">apiVersion: apps/v1
-kind: StatefulSet
-metadata: { name: postgres }
-spec:
-  serviceName: postgres-headless    # Required: headless Service
-  replicas: 3
-  selector: { matchLabels: { app: postgres } }
-  template:
-    metadata: { labels: { app: postgres } }
-    spec:
-      # ... container spec, ports, volumeMounts ...
-  volumeClaimTemplates:             # Per-replica PVCs
-  - metadata: { name: data }
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      storageClassName: gp3
-      resources: { requests: { storage: 50Gi } }</code></pre>
-                <aside class="notes">Two things distinguish a StatefulSet from a Deployment: serviceName (references a headless Service for DNS) and volumeClaimTemplates (creates a unique PVC per replica).</aside>
-            </section>
-
             <!-- Slide 23: Headless Service & Stable Network Identities -->
             <section>
                 <h2>&#127760; Stable Network Identities</h2>
-                <pre><code class="language-yaml"># Headless Service — no ClusterIP, provides DNS for each pod
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-headless
-spec:
-  clusterIP: None       # This makes it "headless"
-  selector:
-    app: postgres
-  ports:
-  - port: 5432</code></pre>
                 <div class="concept-box">
                     <h4>DNS Records Created</h4>
                     <ul>
@@ -662,12 +515,6 @@ spec:
                     <p>Each StatefulSet replica gets its own PVC, named using the pattern:</p>
                     <p><code>&lt;volumeClaimTemplate name&gt;-&lt;statefulset name&gt;-&lt;ordinal&gt;</code></p>
                 </div>
-                <pre><code class="language-bash"># For a StatefulSet named "postgres" with 3 replicas:
-kubectl get pvc
-# NAME              STATUS   VOLUME     CAPACITY   STORAGECLASS
-# data-postgres-0   Bound    pvc-aaa    50Gi       gp3
-# data-postgres-1   Bound    pvc-bbb    50Gi       gp3
-# data-postgres-2   Bound    pvc-ccc    50Gi       gp3</code></pre>
                 <aside class="notes">Tip: When postgres-1 is rescheduled, it reattaches to data-postgres-1 — the same volume with the same data. Identity and storage stay bound together. PVCs from volumeClaimTemplates persist until manually deleted, even when scaling down.</aside>
             </section>
 
@@ -702,11 +549,6 @@ kubectl get pvc
                 <div class="two-columns">
                     <div class="card">
                         <h4>RollingUpdate (Default)</h4>
-                        <pre><code class="language-yaml">spec:
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      partition: 0</code></pre>
                         <ul>
                             <li>Updates pods in reverse ordinal order</li>
                             <li>Waits for each to be Ready</li>
@@ -714,11 +556,6 @@ kubectl get pvc
                     </div>
                     <div class="card">
                         <h4>Partition-Based Canary</h4>
-                        <pre><code class="language-yaml">spec:
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      partition: 2  # Only update pods >= 2</code></pre>
                         <ul>
                             <li>Pods with ordinal &ge; partition get new version</li>
                             <li>Lower partition gradually to roll out</li>
@@ -734,29 +571,6 @@ kubectl get pvc
                 <h2>&#127919; Real-World Storage Patterns</h2>
                 <h3>Recommended approaches for stateful workloads on EKS</h3>
                 <aside class="notes">Now let's see how these primitives come together. These patterns are drawn from common workloads teams run on EKS.</aside>
-            </section>
-
-            <!-- Slide 28: PostgreSQL StatefulSet Example -->
-            <section>
-                <h2>&#128024; PostgreSQL on Kubernetes</h2>
-                <pre><code class="language-yaml">kind: StatefulSet
-metadata: { name: postgresql }
-spec:
-  serviceName: postgresql-headless
-  replicas: 3
-  # ... selector, labels
-  template:
-    spec:
-      containers:
-      - name: postgresql
-        image: postgres:16
-        env:
-        - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
-        # ... password from Secret, ports, resources
-        volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
-  volumeClaimTemplates:    # gp3, 100Gi RWO per replica
-  # ...</code></pre>
-                <aside class="notes">Key detail: PGDATA is set to a subdirectory because PostgreSQL requires the data directory to be empty on init. For a more complete setup, use an operator like CloudNativePG to handle replication, failover, and backups.</aside>
             </section>
 
             <!-- Slide 29: Database Operator Pattern -->
@@ -790,55 +604,6 @@ spec:
                     </div>
                 </div>
                 <aside class="notes">Operators encode DBA expertise into software — leader election, failover, backups, and upgrades. Always evaluate an operator before building custom automation around raw StatefulSets.</aside>
-            </section>
-
-            <!-- Slide 30: Volume Expansion -->
-            <section>
-                <h2>&#128200; Volume Expansion — Resizing PVCs</h2>
-                <pre><code class="language-bash"># Check if the StorageClass allows expansion
-kubectl get sc gp3 -o jsonpath='{.allowVolumeExpansion}'
-# true
-
-# Edit the PVC to request more storage
-kubectl patch pvc data-postgres-0 -p \
-  '{"spec": {"resources": {"requests": {"storage": "100Gi"}}}}'
-
-# Monitor the resize operation
-kubectl get pvc data-postgres-0 -w
-kubectl describe pvc data-postgres-0 | grep Conditions</code></pre>
-                <aside class="notes">EBS supports online expansion — no pod restart needed. Volumes can only grow, never shrink. Two stages: cloud provider resizes the block device, then kubelet resizes the filesystem.</aside>
-            </section>
-
-            <!-- Slide 31: Volume Snapshots -->
-            <section>
-                <h2>&#128248; Volume Snapshots</h2>
-                <h4>VolumeSnapshotClass</h4>
-                <pre><code class="language-yaml"># VolumeSnapshotClass — defines the snapshot provisioner
-kind: VolumeSnapshotClass
-metadata: { name: ebs-snapclass }
-driver: ebs.csi.aws.com
-deletionPolicy: Retain</code></pre>
-                <h4>Create Snapshot</h4>
-                <pre><code class="language-yaml"># VolumeSnapshot — take a snapshot of a PVC
-kind: VolumeSnapshot
-metadata: { name: postgres-snap-20260313 }
-spec:
-  volumeSnapshotClassName: ebs-snapclass
-  source:
-    persistentVolumeClaimName: data-postgres-0</code></pre>
-                <h4>Restore from Snapshot</h4>
-                <pre><code class="language-yaml"># Restore from snapshot — create a new PVC with dataSource
-kind: PersistentVolumeClaim
-metadata: { name: postgres-restored }
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: gp3
-  resources: { requests: { storage: 100Gi } }
-  dataSource:
-    name: postgres-snap-20260313
-    kind: VolumeSnapshot
-    apiGroup: snapshot.storage.k8s.io</code></pre>
-                <aside class="notes">Volume snapshots map directly to EBS snapshots on AWS. VolumeSnapshotClass configures how; VolumeSnapshot triggers the actual snapshot. Useful for pre-upgrade backups, disaster recovery, and cloning environments.</aside>
             </section>
 
             <!-- Slide 32: Storage Best Practices for EKS -->
@@ -970,7 +735,7 @@ spec:
         Reveal.initialize({
             hash: true,
             slideNumber: true,
-            transition: 'slide',
+            transition: 'none',
             plugins: [RevealHighlight, RevealNotes]
         });
     </script>

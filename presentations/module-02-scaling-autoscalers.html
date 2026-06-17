@@ -178,13 +178,6 @@
                         </ul>
                     </div>
                 </div>
-                <pre><code class="language-yaml">resources:
-  requests:
-    cpu: "250m"       # 0.25 CPU cores guaranteed
-    memory: "256Mi"   # 256 MiB guaranteed
-  limits:
-    cpu: "500m"       # Can burst to 0.5 cores, then throttled
-    memory: "512Mi"   # Killed if exceeds 512 MiB</code></pre>
                 <aside class="notes">Requests are scheduling guarantees. Limits are runtime enforcement. CPU is throttled; memory exceeding limits triggers OOMKill.</aside>
             </section>
 
@@ -255,38 +248,6 @@
                 <aside class="notes">Eviction order: BestEffort first, then Burstable, then Guaranteed. Check with: kubectl get pod NAME -o jsonpath='{.status.qosClass}'</aside>
             </section>
 
-            <section>
-                <h2>&#127919; QoS Classes — Examples</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml"># Guaranteed — requests == limits
-resources:
-  requests:
-    cpu: "500m"
-    memory: "512Mi"
-  limits:
-    cpu: "500m"
-    memory: "512Mi"</code></pre>
-                    </div>
-                    <div>
-                        <pre><code class="language-yaml"># Burstable — requests &lt; limits
-resources:
-  requests:
-    cpu: "250m"
-    memory: "256Mi"
-  limits:
-    cpu: "1000m"
-    memory: "512Mi"</code></pre>
-                    </div>
-                </div>
-                <pre><code class="language-yaml"># BestEffort — no resources specified (not recommended)
-containers:
-- name: worker
-  image: myapp:latest
-  # No resources block → QoS = BestEffort</code></pre>
-                <aside class="notes">Guaranteed: stable performance, last evicted. Burstable: practical middle ground. BestEffort: evicted first — use only for throwaway jobs.</aside>
-            </section>
-
             <!-- Section Divider: Metrics Server -->
             <section data-background="linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)" class="section-divider">
                 <h2>&#128202; Metrics Server</h2>
@@ -307,34 +268,7 @@ containers:
                         <li><strong>HPA controller</strong> calculates desired replicas and patches the Deployment</li>
                     </ol>
                 </div>
-                <pre><code class="language-bash"># Verify Metrics Server is running
-kubectl get deployment metrics-server -n kube-system
-
-# Check metrics API availability
-kubectl get apiservice v1beta1.metrics.k8s.io
-
-# View resource usage
-kubectl top nodes
-kubectl top pods -n my-namespace</code></pre>
                 <aside class="notes">Metrics Server is a prerequisite for HPA. It's an in-memory store (latest metrics only) — use Prometheus for historical data. The 15-second scrape interval adds lag to scaling decisions.</aside>
-            </section>
-
-            <!-- kubectl top -->
-            <section>
-                <h2>&#128200; Monitoring with kubectl top</h2>
-                <pre><code class="language-bash"># Node resource usage
-$ kubectl top nodes
-NAME                      CPU(cores)  CPU%  MEMORY   MEMORY%
-ip-10-0-1-100.ec2        450m        22%   2847Mi   36%
-ip-10-0-2-200.ec2        1200m       60%   5120Mi   65%
-
-# Pod resource usage (current namespace)
-$ kubectl top pods
-NAME                      CPU(cores)  MEMORY(bytes)
-myapp-7d4b8c6f5-abc12    45m         128Mi
-myapp-7d4b8c6f5-def34    52m         135Mi
-myapp-7d4b8c6f5-ghi56    38m         122Mi</code></pre>
-                <aside class="notes">kubectl top queries the Metrics Server. Node CPU% is relative to total capacity. Pod values are actual usage — compare to your requests to check sizing.</aside>
             </section>
 
             <!-- Section Divider: HPA -->
@@ -382,63 +316,6 @@ myapp-7d4b8c6f5-ghi56    38m         122Mi</code></pre>
                     <strong>The 10% tolerance band</strong> is critical for stability. If your target is 50% CPU and current usage is between 45%–55%, the HPA takes no action. This prevents constant scaling oscillation.
                 </div>
                 <aside class="notes">These edge cases make HPA stable. The tolerance zone prevents flapping. Conservative handling of missing metrics prevents inappropriate scale-down. Key details for troubleshooting.</aside>
-            </section>
-
-            <!-- HPA v2 YAML -->
-            <section>
-                <h2>&#128221; HPA with autoscaling/v2 API</h2>
-                <pre><code class="language-yaml">apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: myapp-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: myapp
-  minReplicas: 2
-  maxReplicas: 20
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target: { type: Utilization, averageUtilization: 60 }
-  - type: Resource
-    resource:
-      name: memory
-      target: { type: Utilization, averageUtilization: 75 }</code></pre>
-                <aside class="notes">Always use autoscaling/v2 (replaced v2beta2). Supports multiple metrics, custom metrics, and behavior policies. With multiple metrics, HPA uses the highest result.</aside>
-            </section>
-
-            <!-- Custom Metrics HPA + Behavior Policies -->
-            <section>
-                <h2>&#128202; HPA: Custom Metrics &amp; Behavior Policies</h2>
-                <h4>Custom Metrics</h4>
-                <pre><code class="language-yaml"># Key section: metrics (inside HPA spec)
-  metrics:
-  - type: Resource          # Standard CPU metric
-    resource:
-      name: cpu
-      target: { type: Utilization, averageUtilization: 60 }
-  - type: Pods              # Custom: requests/sec per pod
-    pods:
-      metric: { name: http_requests_per_second }
-      target: { type: AverageValue, averageValue: "1000" }
-  - type: External          # SQS queue depth
-    external:
-      metric: { name: sqs_queue_length }
-      target: { type: Value, value: "100" }</code></pre>
-                <h4>Behavior Policies</h4>
-                <pre><code class="language-yaml"># Key section: behavior (inside HPA spec)
-  behavior:
-    scaleUp:
-      stabilizationWindowSeconds: 0
-      policies:
-      - { type: Percent, value: 100, periodSeconds: 60 }
-      - { type: Pods, value: 10, periodSeconds: 60 }
-      selectPolicy: Max
-    # scaleDown: ...</code></pre>
-                <aside class="notes">Pods type: metric from pods themselves (via Prometheus adapter). External type: metrics from outside the cluster. Highest replica count across all metrics wins. Key pattern: scale UP aggressively, scale DOWN conservatively.</aside>
             </section>
 
             <!-- Stabilization Windows Explained -->
@@ -492,24 +369,6 @@ spec:
                     </tbody>
                 </table>
                 <aside class="notes">~55 seconds best case. Longer if image isn't cached or startup is slow. For latency-sensitive services, use lower target utilization to absorb spikes during this lag.</aside>
-            </section>
-
-            <!-- HPA Status -->
-            <section>
-                <h2>&#128270; Monitoring HPA Status</h2>
-                <pre><code class="language-bash"># View HPA status — TARGETS shows current/target for each metric
-$ kubectl get hpa myapp-hpa
-NAME        REFERENCE         TARGETS          REPLICAS
-myapp-hpa   Deployment/myapp  45%/60%,62%/75%  5</code></pre>
-                <pre><code class="language-bash"># Detailed conditions — is scaling working?
-$ kubectl describe hpa myapp-hpa
-Conditions:
-  AbleToScale    True  ReadyForNewScale
-  ScalingActive  True  ValidMetricFound
-  ScalingLimited False DesiredInRange</code></pre>
-                <pre><code class="language-bash"># View scaling events history
-$ kubectl get events --field-selector involvedObject.name=myapp-hpa</code></pre>
-                <aside class="notes">TARGETS shows current/target per metric. Conditions show scaling ability and limits. If ScalingActive is False, check Metrics Server and resource requests.</aside>
             </section>
 
             <!-- Section Divider: VPA -->
@@ -580,17 +439,6 @@ $ kubectl get events --field-selector involvedObject.name=myapp-hpa</code></pre>
                         </tr>
                     </tbody>
                 </table>
-                <h4>Example Configuration</h4>
-                <pre><code class="language-yaml"># Key section: VPA spec
-spec:
-  targetRef: { apiVersion: apps/v1, kind: Deployment, name: myapp }
-  updatePolicy:
-    updateMode: "Off"   # Start with Off to observe
-  resourcePolicy:
-    containerPolicies:
-    - containerName: myapp
-      minAllowed: { cpu: "100m", memory: "128Mi" }
-      maxAllowed: { cpu: "2", memory: "4Gi" }</code></pre>
                 <aside class="notes">Start with Off mode to observe recommendations. Do NOT use VPA Auto mode with HPA on the same CPU/memory metrics — they will conflict. minAllowed/maxAllowed prevent unreasonable values.</aside>
             </section>
 
@@ -697,18 +545,7 @@ spec:
 
             <!-- KEDA YAML -->
             <section>
-                <h2>&#128221; KEDA ScaledObject Example</h2>
-                <pre><code class="language-yaml"># Key section: ScaledObject spec
-spec:
-  scaleTargetRef:
-    name: sqs-consumer           # Deployment to scale
-  minReplicaCount: 0             # Can scale to zero!
-  maxReplicaCount: 50
-  triggers:
-  - type: aws-sqs-queue
-    metadata:
-      queueLength: "5"           # Target 5 messages per pod
-    # ...</code></pre>
+                <h2>&#9889; KEDA ScaledObject &amp; Scale-to-Zero</h2>
                 <div class="key-point">
                     <strong>Scale-to-zero:</strong> When the queue is empty, KEDA scales to 0 replicas. When messages arrive, it scales back up -- reducing costs for bursty workloads.
                 </div>
@@ -757,14 +594,6 @@ spec:
                         </tr>
                     </tbody>
                 </table>
-                <h4>PromQL Example</h4>
-                <pre><code class="language-promql"># CPU utilization as percentage of request
-sum(rate(container_cpu_usage_seconds_total{
-  pod=~"myapp.*"}[5m])) by (pod)
-/
-sum(kube_pod_container_resource_requests{
-  resource="cpu",pod=~"myapp.*"}) by (pod)
-* 100</code></pre>
                 <aside class="notes">Compare current vs. desired replica counts to understand scaling decisions over time. This PromQL calculates CPU utilization as a percentage of requests — matching what HPA computes internally.</aside>
             </section>
 
@@ -794,28 +623,6 @@ sum(kube_pod_container_resource_requests{
                     </div>
                 </div>
                 <aside class="notes">60-70% CPU target leaves headroom for scaling lag. Load test to validate. Pod autoscaling requires sufficient cluster node capacity (Cluster Autoscaler).</aside>
-            </section>
-
-            <!-- Complete HPA Example -->
-            <section>
-                <h2>&#128221; Recommended HPA Pattern</h2>
-                <pre><code class="language-yaml"># Complete HPA with tuned behavior
-spec:
-  # ...scaleTargetRef, minReplicas: 3, maxReplicas: 30
-  metrics:
-  - type: Resource
-    resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } }
-  behavior:
-    scaleUp:
-      policies:
-      - { type: Percent, value: 50, periodSeconds: 60 }
-      selectPolicy: Max
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-      - { type: Percent, value: 10, periodSeconds: 120 }
-      selectPolicy: Min</code></pre>
-                <aside class="notes">Good starting point. minReplicas: 3 for HA across AZs. Scale-up aggressive (50% per minute), scale-down gentle (10% every 2 min, 5-min stabilization). Adjust based on load testing.</aside>
             </section>
 
             <!-- Lab Callout -->
@@ -877,7 +684,7 @@ spec:
         Reveal.initialize({
             hash: true,
             slideNumber: true,
-            transition: 'slide',
+            transition: 'none',
             plugins: [RevealHighlight, RevealNotes]
         });
     </script>

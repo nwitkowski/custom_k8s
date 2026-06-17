@@ -214,6 +214,21 @@ kubectl get pods -n kube-system
 kubectl get all -A
 ```
 
+Map the cluster's plumbing to the architecture (the control plane is AWS-managed and not shown):
+
+```bash
+kubectl get pods -n kube-system -o wide
+#   coredns      -> cluster DNS
+#   kube-proxy   -> Service networking on each node
+#   aws-node     -> the CNI plugin (Pod networking / IPs)
+#   ebs-csi-*    -> the CSI driver (volume provisioning)
+
+# The API surface the control plane exposes:
+kubectl api-resources | head -20
+```
+
+> ✅ **Checkpoint:** You only see **worker-node** components — the kubelet runs them, and CNI/CSI/DNS/kube-proxy are the pluggable drivers. The **control plane** (API server, scheduler, controller-manager, etcd) is managed by AWS and isn't visible — exactly the control-plane-vs-nodes split from the Module 1 architecture primer.
+
 ---
 
 ## Step 7: Deploy Your First Application

@@ -173,16 +173,6 @@
                 <div class="key-point">
                     <strong>Purpose:</strong> Detect when a container is <em>stuck</em> and needs to be <em>restarted</em>. Answers: "Is the application still alive?"
                 </div>
-                <pre><code class="language-yaml">containers:
-- name: app
-  image: myapp:1.0
-  livenessProbe:
-    httpGet:
-      path: /healthz
-      port: 8080
-    initialDelaySeconds: 15
-    periodSeconds: 10
-    failureThreshold: 3</code></pre>
                 <ul>
                     <li>Failure action: <strong>kubelet restarts the container</strong></li>
                     <li>Use for deadlocks, infinite loops, unrecoverable states</li>
@@ -191,50 +181,12 @@
                 <aside class="notes">When a liveness probe fails, kubelet kills and restarts the container. Only check the app's own health -- never external dependencies. If you check a database and the DB goes down, every pod restarts, making things worse.</aside>
             </section>
 
-            <!-- Slide 8: Liveness Probe — TCP and Exec Examples -->
-            <section>
-                <h2>&#128154; Liveness: TCP &amp; Exec Variants</h2>
-                <div class="two-columns">
-                    <div>
-                        <h4>TCP Socket Probe</h4>
-                        <pre><code class="language-yaml">livenessProbe:
-  tcpSocket:
-    port: 3306
-  initialDelaySeconds: 30
-  periodSeconds: 10</code></pre>
-                        <p style="font-size:0.8em;">Succeeds if TCP connection opens. Ideal for databases, message brokers.</p>
-                    </div>
-                    <div>
-                        <h4>Exec Command Probe</h4>
-                        <pre><code class="language-yaml">livenessProbe:
-  exec:
-    command:
-    - /bin/sh
-    - -c
-    - pg_isready -U postgres
-  initialDelaySeconds: 30
-  periodSeconds: 15</code></pre>
-                        <p style="font-size:0.8em;">Runs command inside container. Exit code 0 = success.</p>
-                    </div>
-                </div>
-                <aside class="notes">TCP probes try to open a socket -- useful for databases or Redis. Exec probes run a command inside the container. Here we use pg_isready for PostgreSQL health.</aside>
-            </section>
-
             <!-- Slide 9: Readiness Probes -->
             <section>
                 <h2>&#128309; Readiness Probes</h2>
                 <div class="key-point">
                     <strong>Purpose:</strong> Control when a pod <em>receives traffic</em> from a Service. Answers: "Is the application ready to accept requests?"
                 </div>
-                <pre><code class="language-yaml">containers:
-- name: app
-  image: myapp:1.0
-  readinessProbe:
-    httpGet:
-      path: /ready
-      port: 8080
-    periodSeconds: 5
-    failureThreshold: 3</code></pre>
                 <ul>
                     <li>Failure action: <strong>pod removed from Service endpoints</strong> (not restarted)</li>
                     <li>Can check downstream dependencies (caches warmed, connections established)</li>
@@ -249,16 +201,6 @@
                 <div class="key-point">
                     <strong>Purpose:</strong> Protect slow-starting containers from being killed by liveness probes before they're ready.
                 </div>
-                <pre><code class="language-yaml">containers:
-- name: app
-  image: legacy-app:2.0
-  startupProbe:
-    httpGet: { path: /healthz, port: 8080 }
-    failureThreshold: 30
-    periodSeconds: 10
-  livenessProbe:
-    httpGet: { path: /healthz, port: 8080 }
-    periodSeconds: 10</code></pre>
                 <ul>
                     <li>Liveness and readiness probes <strong>disabled until startup probe succeeds</strong></li>
                     <li>Max startup time = <code>failureThreshold &times; periodSeconds</code> (300s above)</li>
@@ -373,19 +315,6 @@
             <!-- Slide 14: HTTP Probe Deep Dive -->
             <section>
                 <h2>&#127760; HTTP Probe Deep Dive</h2>
-                <pre><code class="language-yaml">livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 8080
-    scheme: HTTPS
-    httpHeaders:
-    - name: Authorization
-      value: Bearer abc123
-    - name: X-Custom-Header
-      value: probe-check
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  timeoutSeconds: 3</code></pre>
                 <ul>
                     <li><strong>Success:</strong> HTTP status code &ge; 200 and &lt; 400</li>
                     <li><strong>port:</strong> Container port number or named port reference</li>
@@ -399,19 +328,6 @@
             <!-- Slide 15: TCP Probe Deep Dive -->
             <section>
                 <h2>&#128268; TCP Probe Deep Dive</h2>
-                <pre><code class="language-yaml">spec:
-  containers:
-  - name: redis
-    image: redis:7
-    ports: [{ containerPort: 6379 }]
-    readinessProbe:
-      tcpSocket: { port: 6379 }
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    livenessProbe:
-      tcpSocket: { port: 6379 }
-      initialDelaySeconds: 15
-      periodSeconds: 20</code></pre>
                 <div class="two-columns">
                     <div class="highlight-box success">
                         <strong>Best For:</strong> Databases, caches, message brokers &mdash; any service that doesn't speak HTTP.
@@ -426,21 +342,6 @@
             <!-- Slide 16: Exec Probe Deep Dive -->
             <section>
                 <h2>&#128187; Exec Probe Deep Dive</h2>
-                <pre><code class="language-yaml">spec:
-  containers:
-  - name: app
-    image: myapp:1.0
-    livenessProbe:
-      exec:
-        command:
-        - /bin/sh
-        - -c
-        - |
-          test -f /tmp/healthy &amp;&amp;
-          find /tmp/healthy -mmin -1 | grep -q healthy
-      initialDelaySeconds: 10
-      periodSeconds: 15
-      timeoutSeconds: 5</code></pre>
                 <ul>
                     <li><strong>Exit code 0</strong> = success, any other code = failure</li>
                     <li>Runs <em>inside</em> the container &mdash; must have required binaries</li>
@@ -462,16 +363,6 @@
                     <li>App must implement the <code>grpc.health.v1.Health</code> service</li>
                     <li>Returns <code>SERVING</code>, <code>NOT_SERVING</code>, or <code>UNKNOWN</code></li>
                 </ul>
-                <h4>Configuration</h4>
-                <pre><code class="language-yaml">livenessProbe:
-  grpc:
-    port: 50051
-    service: "myservice"    # check specific service
-  periodSeconds: 10
-readinessProbe:
-  grpc:
-    port: 50051             # omit service = overall status
-  periodSeconds: 5</code></pre>
                 <aside class="notes">Before this feature, you needed exec probes with grpc_health_probe or a sidecar. Now Kubernetes natively speaks the gRPC health protocol. Your app just needs to implement grpc.health.v1.Health. The optional service field lets you check specific services within a multi-service gRPC server.</aside>
             </section>
 
@@ -545,43 +436,10 @@ readinessProbe:
                 <aside class="notes">Use different endpoints: /healthz for liveness (internal state), /ready for readiness (downstream connectivity). Liveness returns 200 if the event loop is responsive; readiness checks connection pool and cache state.</aside>
             </section>
 
-            <!-- Slide 21: Real-World Examples — Web App -->
-            <section>
-                <h2>&#127758; Example: Web Application</h2>
-                <pre><code class="language-yaml">startupProbe:
-  httpGet: { path: /healthz, port: 8080 }
-  failureThreshold: 30
-  periodSeconds: 5           # 150s max startup
-livenessProbe:
-  httpGet: { path: /healthz, port: 8080 }
-  periodSeconds: 10
-  failureThreshold: 3        # restart after 30s
-readinessProbe:
-  httpGet: { path: /ready, port: 8080 }
-  periodSeconds: 5
-  successThreshold: 2        # prevent flapping</code></pre>
-                <div class="highlight-box">
-                    <strong>Startup:</strong> 150s max &bull; <strong>Liveness:</strong> restart after 30s &bull; <strong>Readiness:</strong> remove from LB within 15s
-                </div>
-                <aside class="notes">Startup gives 150 seconds for initialization. Liveness checks a lightweight internal endpoint. Readiness uses a separate endpoint and requires 2 consecutive successes before re-adding the pod, preventing flapping.</aside>
-            </section>
-
             <!-- Slide 22: Real-World Examples — Microservice Probes -->
             <section>
                 <h2>&#128640; Real-World: Microservice Probes</h2>
                 <h4>gRPC Microservice</h4>
-                <pre><code class="language-yaml">containers:
-- name: order-svc
-  image: order-service:1.5
-  livenessProbe:
-    grpc:
-      port: 50051
-    periodSeconds: 10
-  readinessProbe:
-    grpc:
-      port: 50051
-      service: "orders"
-    periodSeconds: 5</code></pre>
                 <ul>
                     <li><strong>Liveness:</strong> Checks the gRPC server is responsive (overall status)</li>
                     <li><strong>Readiness:</strong> Checks the specific "orders" service is ready to handle requests</li>
@@ -593,43 +451,12 @@ readinessProbe:
             <section>
                 <h2>&#128640; Real-World: Sidecar Probes</h2>
                 <h4>Database Sidecar (PgBouncer)</h4>
-                <pre><code class="language-yaml">containers:
-- name: pgbouncer
-  image: pgbouncer:1.20
-  livenessProbe:
-    tcpSocket: { port: 6432 }
-    periodSeconds: 15
-  readinessProbe:
-    exec:
-      command: ["/bin/sh", "-c",
-        "psql -h 127.0.0.1 -p 6432 -U probe -c 'SELECT 1'"]
-    periodSeconds: 10</code></pre>
                 <ul>
                     <li><strong>Liveness (TCP):</strong> Is PgBouncer listening on port 6432?</li>
                     <li><strong>Readiness (Exec):</strong> Can it actually execute a query end-to-end?</li>
                     <li>This layered approach catches both process-level and application-level failures</li>
                 </ul>
                 <aside class="notes">TCP for liveness (is PgBouncer listening?) and exec for readiness (can it execute a query?). Layered approach catches both process and application failures.</aside>
-            </section>
-
-            <!-- Slide 23: Debugging Probe Failures -->
-            <section>
-                <h2>&#128270; Debugging Probe Failures</h2>
-                <h4>Step 1: Check Pod Events</h4>
-                <pre><code class="language-bash"># See probe failure events
-kubectl describe pod my-app | grep -A 5 "Events"
-# Look for Warning events
-kubectl get events --field-selector reason=Unhealthy \
-  --sort-by='.lastTimestamp'</code></pre>
-                <h4>Step 2: Check Logs &amp; Test Manually</h4>
-                <pre><code class="language-bash"># Current and previous container logs
-kubectl logs my-app -c app --tail=50
-kubectl logs my-app -c app --previous
-
-# Exec into pod and test the health endpoint
-kubectl exec my-app -- curl -s http://localhost:8080/healthz
-kubectl exec my-app -- wget -qO- http://localhost:8080/ready</code></pre>
-                <aside class="notes">Describe the pod to see events, check logs (use --previous for crashed containers), then exec into the pod to test health endpoints manually. Common issues: misconfigured port, wrong path, or 503 during initialization.</aside>
             </section>
 
             <!-- Slide 24: Graceful Shutdown & preStop Hooks -->
@@ -644,16 +471,6 @@ kubectl exec my-app -- wget -qO- http://localhost:8080/ready</code></pre>
                     <li><strong>Race condition:</strong> Add a <code>sleep 5</code> in preStop to let endpoints propagate</li>
                     <li><strong>terminationGracePeriodSeconds:</strong> Must exceed preStop + drain time</li>
                 </ul>
-                <h4>preStop Hook</h4>
-                <pre><code class="language-yaml">terminationGracePeriodSeconds: 60
-containers:
-- name: app
-  # ...
-  lifecycle:
-    preStop:
-      exec:
-        command: ["/bin/sh", "-c",
-          "curl -s localhost:8080/shutdown; sleep 15"]</code></pre>
                 <aside class="notes">When Kubernetes terminates a pod, endpoint removal and the preStop hook run simultaneously. Kube-proxy might still route traffic briefly after termination starts. The sleep in preStop ensures existing connections drain before shutdown. Set terminationGracePeriodSeconds high enough to cover preStop plus drain time.</aside>
             </section>
 
@@ -663,32 +480,10 @@ containers:
                 <div class="key-point">
                     <strong>PDBs</strong> limit how many pods in a Deployment can be unavailable during <em>voluntary disruptions</em> (node drains, cluster upgrades, autoscaling).
                 </div>
-                <div class="two-columns">
-                    <div>
-                        <h4>Min Available</h4>
-                        <pre><code class="language-yaml">apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: web-pdb
-spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      app: web</code></pre>
-                    </div>
-                    <div>
-                        <h4>Max Unavailable</h4>
-                        <pre><code class="language-yaml">apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: api-pdb
-spec:
-  maxUnavailable: "25%"
-  selector:
-    matchLabels:
-      app: api</code></pre>
-                    </div>
-                </div>
+                <ul>
+                    <li><strong>minAvailable:</strong> Minimum pods that must stay up &mdash; best for small replica counts</li>
+                    <li><strong>maxUnavailable:</strong> Cap on pods taken down at once &mdash; use percentages for larger deployments</li>
+                </ul>
                 <aside class="notes">PDBs prevent taking down too many pods at once during node drains or cluster upgrades. Use minAvailable for small replica counts and maxUnavailable with percentages for larger deployments.</aside>
             </section>
 
@@ -704,22 +499,6 @@ spec:
                     <strong>Probe interaction:</strong> A pod that fails its readiness probe counts as unavailable, which can block further voluntary disruptions. Always consider PDB + readiness probe behavior together.
                 </div>
                 <aside class="notes">A pod failing its readiness probe counts as unavailable, which can block further voluntary disruptions.</aside>
-            </section>
-
-            <!-- Slide 26: Putting It All Together -->
-            <section>
-                <h2>&#128640; Recommended Pod Spec Pattern</h2>
-                <pre><code class="language-yaml">terminationGracePeriodSeconds: 45
-containers:
-- name: app
-  image: myapp:2.0
-  startupProbe:
-    httpGet: { path: /healthz, port: 8080 }
-    failureThreshold: 20
-    periodSeconds: 5
-  # ... livenessProbe, readinessProbe ...
-  # ... resources, lifecycle, securityContext ...</code></pre>
-                <aside class="notes">Combines all three probes, resource limits, a termination grace period, and a preStop hook. Adjust timing parameters based on your application's characteristics.</aside>
             </section>
 
             <!-- Slide 27: Quick Reference -->
@@ -802,27 +581,14 @@ containers:
             <!-- Slide: Essential Troubleshooting Tools -->
             <section>
                 <h2>&#128736;&#65039; Essential Troubleshooting Tools</h2>
-                <pre><code class="language-bash"># Inspect pod status, events, and conditions
-kubectl describe pod &lt;pod-name&gt;
-kubectl describe node &lt;node-name&gt;
-
-# View logs — current, previous crash, specific container
-kubectl logs &lt;pod&gt; --tail=100
-kubectl logs &lt;pod&gt; --previous
-kubectl logs &lt;pod&gt; -c &lt;container&gt; --follow
-
-# Interactive shell into a running container
-kubectl exec -it &lt;pod&gt; -- /bin/sh
-
-# Ephemeral debug container (no shell in distroless images)
-kubectl debug -it &lt;pod&gt; --image=busybox --target=&lt;container&gt;
-
-# Resource usage (requires metrics-server)
-kubectl top pod     # CPU/memory per pod
-kubectl top node    # CPU/memory per node
-
-# Cluster events sorted by time
-kubectl get events --sort-by=.lastTimestamp -n &lt;namespace&gt;</code></pre>
+                <ul>
+                    <li><strong>describe</strong> &mdash; pod/node status, events, and conditions</li>
+                    <li><strong>logs</strong> &mdash; current, <code>--previous</code> crash, per-container with <code>--follow</code></li>
+                    <li><strong>exec</strong> &mdash; interactive shell into a running container</li>
+                    <li><strong>debug</strong> &mdash; ephemeral debug container for distroless images (no shell)</li>
+                    <li><strong>top</strong> &mdash; live CPU/memory per pod and node (needs metrics-server)</li>
+                    <li><strong>get events</strong> &mdash; cluster events sorted by time</li>
+                </ul>
                 <div class="key-point">
                     <strong>Workflow:</strong> Events &#10132; Describe &#10132; Logs &#10132; Exec/Debug &#10132; Top
                 </div>
@@ -906,7 +672,7 @@ kubectl get events --sort-by=.lastTimestamp -n &lt;namespace&gt;</code></pre>
         Reveal.initialize({
             hash: true,
             slideNumber: true,
-            transition: 'slide',
+            transition: 'none',
             plugins: [RevealHighlight, RevealNotes]
         });
     </script>

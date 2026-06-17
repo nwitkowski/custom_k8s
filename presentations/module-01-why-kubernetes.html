@@ -330,13 +330,6 @@
                     <h4>The API Server is the single point of interaction</h4>
                     <p><code>kubectl</code>, CI/CD pipelines, controllers, and the scheduler all speak the same API.</p>
                 </div>
-                <div>
-                    <pre><code class="language-bash"># Every developer action is an API call
-kubectl apply -f deployment.yaml    # POST/PUT to /apis/apps/v1/deployments
-kubectl get pods                    # GET to /api/v1/pods
-kubectl logs my-pod                 # GET to /api/v1/pods/my-pod/log
-kubectl port-forward svc/myapp 8080 # Upgrade to SPDY/WebSocket</code></pre>
-                </div>
                 <div class="key-point">
                     <strong>Why this matters:</strong> The API is versioned and consistent. Your manifests work on future clusters thanks to API compatibility guarantees.
                 </div>
@@ -434,86 +427,42 @@ kubectl port-forward svc/myapp 8080 # Upgrade to SPDY/WebSocket</code></pre>
             <!-- Pods -->
             <section>
                 <h2>&#128230; Pods — The Atomic Unit</h2>
-                <div class="two-columns">
-                    <div>
-                        <ul>
-                            <li>Smallest deployable unit in K8s</li>
-                            <li>One or more containers sharing network &amp; storage</li>
-                            <li>Every container in a pod shares <code>localhost</code></li>
-                            <li>Pods are <strong>ephemeral</strong> — they can be killed and rescheduled</li>
-                            <li>You rarely create pods directly — use Deployments</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <pre><code class="language-yaml">kind: Pod
-spec:
-  containers:
-  - name: myapp
-    image: ecr-repo/myapp:v1.2.3
-    ports: [{ containerPort: 8080 }]
-    resources:
-      requests: { cpu: "250m", memory: "256Mi" }
-    # ... livenessProbe, readinessProbe</code></pre>
-                    </div>
-                </div>
+                <ul>
+                    <li>Smallest deployable unit in K8s</li>
+                    <li>One or more containers sharing network &amp; storage</li>
+                    <li>Every container in a pod shares <code>localhost</code></li>
+                    <li>Pods are <strong>ephemeral</strong> — they can be killed and rescheduled</li>
+                    <li>You rarely create pods directly — use Deployments</li>
+                </ul>
                 <aside class="notes">Never depend on a specific pod existing. Key elements: image with a specific tag (avoid :latest), resource requests/limits, and health probes. All are developer responsibilities.</aside>
             </section>
 
             <!-- Deployments -->
             <section>
                 <h2>&#9881;&#65039; Deployments — Desired State Management</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml">kind: Deployment
-spec:
-  replicas: 3
-  strategy:
-    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
-  template:
-    spec:
-      containers:
-      - image: ecr-repo/myapp:v1.2.3
-        # ... ports, resources, probes</code></pre>
-                    </div>
-                    <div>
-                        <h4>What Deployments provide:</h4>
-                        <ul>
-                            <li><strong>Desired state</strong> — declare replica count and Kubernetes reconciles continuously</li>
-                            <li><strong>Rolling updates</strong> — new pods start before old ones terminate (<code>maxUnavailable: 0</code>)</li>
-                            <li><strong>Rollback</strong> — instantly revert to a previous revision with <code>kubectl rollout undo</code></li>
-                            <li><strong>Self-healing</strong> — failed pods are automatically replaced to match the desired count</li>
-                        </ul>
-                    </div>
-                </div>
+                <h4>What Deployments provide:</h4>
+                <ul>
+                    <li><strong>Desired state</strong> — declare replica count and Kubernetes reconciles continuously</li>
+                    <li><strong>Rolling updates</strong> — new pods start before old ones terminate (<code>maxUnavailable: 0</code>)</li>
+                    <li><strong>Rollback</strong> — instantly revert to a previous revision with <code>kubectl rollout undo</code></li>
+                    <li><strong>Self-healing</strong> — failed pods are automatically replaced to match the desired count</li>
+                </ul>
                 <aside class="notes">You declare "I want 3 healthy copies" and Kubernetes makes it happen. replicas controls availability, strategy controls update behavior (maxUnavailable: 0 = zero-downtime deploys). The controller continuously reconciles actual state to desired state.</aside>
             </section>
 
             <!-- Services -->
             <section>
                 <h2>&#128279; Services — Stable Networking</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml">kind: Service
-spec:
-  selector: { app: myapp }
-  ports:
-  - port: 80
-    targetPort: 8080
-  type: ClusterIP</code></pre>
-                    </div>
-                    <div>
-                        <h4>Why Services exist:</h4>
-                        <ul>
-                            <li>Pods have dynamic IPs — they change on restart</li>
-                            <li>Services provide a <strong>stable</strong> virtual IP</li>
-                            <li>Built-in load balancing across pod replicas</li>
-                            <li>DNS-based discovery — no hardcoded IPs</li>
-                            <li>Selector connects Service to Pods via labels</li>
-                        </ul>
-                        <div class="key-point">
-                            <strong>Think of it as:</strong> A stable address that always routes to healthy pods.
-                        </div>
-                    </div>
+                <h4>Why Services exist:</h4>
+                <ul>
+                    <li>Pods have dynamic IPs — they change on restart</li>
+                    <li>Services provide a <strong>stable</strong> virtual IP</li>
+                    <li>Built-in load balancing across pod replicas</li>
+                    <li>DNS-based discovery — no hardcoded IPs</li>
+                    <li>Selector connects Service to Pods via labels</li>
+                </ul>
+                <div class="key-point">
+                    <strong>Think of it as:</strong> A stable address that always routes to healthy pods.
                 </div>
                 <aside class="notes">The selector matches labels on pods. Kubernetes updates endpoints as pods come and go. Covered in depth in Module 4.</aside>
             </section>
@@ -531,25 +480,20 @@ spec:
                 <div class="two-columns">
                     <div class="card">
                         <h4>&#128680; Imperative (Not Recommended)</h4>
-                        <pre><code class="language-bash"># Step-by-step commands
-kubectl create deployment myapp \
-  --image=myapp:v1
-kubectl scale deployment myapp \
-  --replicas=3
-kubectl set image deployment/myapp \
-  myapp=myapp:v2</code></pre>
+                        <ul>
+                            <li>Step-by-step commands: create, scale, set image</li>
+                            <li>No record of intended state</li>
+                            <li>Hard to audit or reproduce</li>
+                        </ul>
                         <p style="font-size: 0.85em;">Tells Kubernetes <em>what to do</em> step by step.</p>
                     </div>
                     <div class="card">
                         <h4>&#9989; Declarative (Best Practice)</h4>
-                        <pre><code class="language-bash"># Declare desired state
-kubectl apply -f deployment.yaml
-
-# Update? Change the YAML, re-apply
-kubectl apply -f deployment.yaml
-
-# Everything is in version control
-git diff deployment.yaml</code></pre>
+                        <ul>
+                            <li>Declare desired state in a manifest</li>
+                            <li>Update by editing the YAML and re-applying</li>
+                            <li>Everything lives in version control</li>
+                        </ul>
                         <p style="font-size: 0.85em;">Tells Kubernetes <em>what you want</em> — it figures out how.</p>
                     </div>
                 </div>
@@ -618,30 +562,6 @@ git diff deployment.yaml</code></pre>
                     </div>
                 </div>
                 <aside class="notes">The image is your immutable artifact -- same bytes everywhere. Only configuration changes, via ConfigMaps and Secrets.</aside>
-            </section>
-
-            <!-- Kustomize Example -->
-            <section>
-                <h2>&#128736;&#65039; Environment Parity in Practice</h2>
-                <pre><code class="language-bash"># Directory structure for multi-environment manifests
-k8s/
-├── base/
-│   ├── deployment.yaml        # Common Deployment spec
-│   ├── service.yaml           # Common Service spec
-│   └── kustomization.yaml     # Base kustomization
-├── overlays/
-│   ├── dev/
-│   │   ├── kustomization.yaml # Dev-specific patches
-│   │   └── configmap.yaml
-│   ├── staging/
-│   │   └── ...                # Same structure as dev
-│   └── prod/
-│       └── ...                # Same structure as dev</code></pre>
-                <pre><code class="language-bash"># Deploy to each environment
-kubectl apply -k k8s/overlays/dev/
-kubectl apply -k k8s/overlays/staging/
-kubectl apply -k k8s/overlays/prod/</code></pre>
-                <aside class="notes">Kustomize is built into kubectl. The base contains the common definition; overlays patch only what differs per environment (replica counts, resource limits, etc.).</aside>
             </section>
 
             <!-- Section Divider: 12-Factor -->
@@ -751,29 +671,13 @@ kubectl apply -k k8s/overlays/prod/</code></pre>
             <!-- Graceful Shutdown Example -->
             <section>
                 <h2>&#128683; Factor IX Deep Dive — Disposability</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml">spec:
-  terminationGracePeriodSeconds: 30
-  containers:
-  - name: myapp
-    lifecycle:
-      preStop:
-        exec:
-          command: ["/bin/sh", "-c", "sleep 5"]
-    # 1. Removed from endpoints → preStop runs → SIGTERM
-    # 2. Wait terminationGracePeriodSeconds → SIGKILL</code></pre>
-                    </div>
-                    <div>
-                        <h4>Graceful shutdown sequence:</h4>
-                        <ul>
-                            <li>Pod is removed from Service endpoints — no new traffic is routed</li>
-                            <li><strong>preStop hook</strong> runs first — the <code>sleep 5</code> allows in-flight requests to drain</li>
-                            <li><strong>SIGTERM</strong> is sent to the container process — the app should finish work and exit</li>
-                            <li>After <code>terminationGracePeriodSeconds</code>, Kubernetes sends <strong>SIGKILL</strong> to force termination</li>
-                        </ul>
-                    </div>
-                </div>
+                <h4>Graceful shutdown sequence:</h4>
+                <ul>
+                    <li>Pod is removed from Service endpoints — no new traffic is routed</li>
+                    <li><strong>preStop hook</strong> runs first — a brief drain allows in-flight requests to complete</li>
+                    <li><strong>SIGTERM</strong> is sent to the container process — the app should finish work and exit</li>
+                    <li>After <code>terminationGracePeriodSeconds</code>, Kubernetes sends <strong>SIGKILL</strong> to force termination</li>
+                </ul>
                 <aside class="notes">The preStop sleep gives kube-proxy and ingress controllers time to update routing before the pod stops accepting traffic. Not handling SIGTERM means dropped in-flight requests.</aside>
             </section>
 
@@ -862,29 +766,6 @@ kubectl apply -k k8s/overlays/prod/</code></pre>
                     <strong>EKS advantage:</strong> The control plane is someone else's problem. You focus on workloads.
                 </div>
                 <aside class="notes">EKS is managed Kubernetes -- AWS handles the control plane, so the platform team focuses on worker nodes and developer enablement.</aside>
-            </section>
-
-            <!-- EKS Developer Workflow -->
-            <section>
-                <h2>&#128736;&#65039; EKS Developer Workflow</h2>
-                <pre><code class="language-bash"># 1. Authenticate to the cluster
-aws eks update-kubeconfig --name platform-lab --region us-east-2
-
-# 2. Verify connectivity and set namespace
-kubectl cluster-info
-kubectl config set-context --current --namespace=my-team
-
-# 3. Deploy your application
-kubectl apply -f k8s/
-
-# 4. Monitor your deployment
-kubectl rollout status deployment/myapp
-kubectl get pods -w
-
-# 5. Check logs and debug
-kubectl logs -l app=myapp --tail=100 -f
-kubectl describe pod myapp-abc123</code></pre>
-                <aside class="notes">aws eks update-kubeconfig configures kubectl to authenticate via IAM. From there, standard K8s commands. Namespaces isolate team workloads.</aside>
             </section>
 
             <!-- Section Divider: Enterprise Architecture Patterns -->
@@ -1065,7 +946,7 @@ kubectl describe pod myapp-abc123</code></pre>
         Reveal.initialize({
             hash: true,
             slideNumber: true,
-            transition: 'slide',
+            transition: 'none',
             plugins: [RevealHighlight, RevealNotes]
         });
     </script>

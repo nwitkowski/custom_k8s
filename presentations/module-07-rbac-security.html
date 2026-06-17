@@ -224,83 +224,9 @@
                 <aside class="notes">The separation allows reuse — a single ClusterRole can be bound to different users in different namespaces via multiple RoleBindings.</aside>
             </section>
 
-            <!-- Slide 8: Role vs ClusterRole -->
-            <section>
-                <h2>Role vs ClusterRole</h2>
-                <div style="display:flex;gap:2rem">
-                    <div>
-                        <h4>Role (Namespace)</h4>
-                        <pre><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  namespace: development
-  name: pod-reader
-rules:
-- apiGroups: [""]          # core API group
-  resources: ["pods"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: [""]
-  resources: ["pods/log"]
-  verbs: ["get"]</code></pre>
-                    </div>
-                    <div>
-                        <h4>ClusterRole (Cluster-Wide)</h4>
-                        <pre><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: node-viewer
-rules:
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: ["metrics.k8s.io"]
-  resources: ["nodes"]
-  verbs: ["get", "list"]
-- nonResourceURLs: ["/healthz", "/readyz"]
-  verbs: ["get"]</code></pre>
-                    </div>
-                </div>
-                <aside class="notes">Roles are namespace-scoped. ClusterRoles can reference nonResourceURLs (Roles cannot) and serve as reusable templates bound per-namespace via RoleBindings.</aside>
-            </section>
-
             <!-- Slide 10: RoleBinding vs ClusterRoleBinding -->
             <section>
                 <h2>RoleBinding vs ClusterRoleBinding</h2>
-                <div style="display:flex;gap:2rem">
-                    <div>
-                        <h4>RoleBinding</h4>
-                        <pre><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: read-pods-dev
-  namespace: development
-subjects:
-- { kind: User, name: jane, apiGroup: rbac.authorization.k8s.io }
-- { kind: Group, name: dev-team, apiGroup: rbac.authorization.k8s.io }
-roleRef:
-  kind: Role
-  name: pod-reader
-  apiGroup: rbac.authorization.k8s.io</code></pre>
-                    </div>
-                    <div>
-                        <h4>ClusterRoleBinding</h4>
-                        <pre><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: cluster-node-viewers
-subjects:
-- kind: Group
-  name: ops-team
-  apiGroup: rbac.authorization.k8s.io
-- kind: ServiceAccount
-  name: monitoring-sa
-  namespace: monitoring
-roleRef:
-  kind: ClusterRole
-  name: node-viewer
-  apiGroup: rbac.authorization.k8s.io</code></pre>
-                    </div>
-                </div>
                 <div class="key-point">
                     <strong>Subjects</strong> can be Users, Groups, or ServiceAccounts. <strong>roleRef</strong> can point to a Role or ClusterRole. ClusterRoleBindings grant permissions across ALL namespaces -- use sparingly.
                 </div>
@@ -365,28 +291,6 @@ roleRef:
             <!-- Slide 13: Aggregated ClusterRoles -->
             <section>
                 <h2>&#128736;&#65039; Aggregated ClusterRoles</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml">kind: ClusterRole
-metadata:
-  name: monitoring-endpoints
-  labels:
-    rbac.example.com/aggregate-to-monitoring: "true"
-rules:
-- apiGroups: [""]
-  resources: ["services", "endpoints", "pods"]
-  verbs: ["get", "list", "watch"]</code></pre>
-                    </div>
-                    <div>
-                        <pre><code class="language-yaml">kind: ClusterRole
-metadata: { name: monitoring }
-aggregationRule:
-  clusterRoleSelectors:
-  - matchLabels:
-      rbac.example.com/aggregate-to-monitoring: "true"
-rules: []  # auto-filled by controller</code></pre>
-                    </div>
-                </div>
                 <div class="concept-box">
                     <h4>How it works</h4>
                     <p>The controller manager automatically combines rules from all ClusterRoles matching the label selector. Built-in roles like <code>admin</code>, <code>edit</code>, and <code>view</code> use aggregation.</p>
@@ -404,67 +308,22 @@ rules: []  # auto-filled by controller</code></pre>
             <!-- Slide 15: ServiceAccount Anatomy -->
             <section>
                 <h2>&#128301; ServiceAccount Anatomy</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml">apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: app-sa
-  namespace: production
-  annotations:
-    eks.amazonaws.com/role-arn: >-
-      arn:aws:iam::123456789012:role/app-role
-automountServiceAccountToken: false</code></pre>
-                    </div>
-                    <div>
-                        <div class="card">
-                            <h4>Key Properties</h4>
-                            <ul>
-                                <li>Namespace-scoped identity</li>
-                                <li>Every namespace has a <code>default</code> SA</li>
-                                <li>Tokens are projected as volumes</li>
-                                <li>Annotations enable cloud integrations</li>
-                                <li>Can disable auto-mount for security</li>
-                            </ul>
-                        </div>
-                    </div>
+                <div class="card">
+                    <h4>Key Properties</h4>
+                    <ul>
+                        <li>Namespace-scoped identity</li>
+                        <li>Every namespace has a <code>default</code> SA</li>
+                        <li>Tokens are projected as volumes</li>
+                        <li>Annotations enable cloud integrations</li>
+                        <li>Can disable auto-mount for security</li>
+                    </ul>
                 </div>
                 <aside class="notes">Every pod runs as a ServiceAccount — default SA if unspecified. Create dedicated SAs per application and disable auto-mounting when API access isn't needed. The EKS annotation enables IRSA.</aside>
-            </section>
-
-            <!-- Slide 16: ServiceAccount Token Projection -->
-            <section>
-                <h2>&#128178; ServiceAccount Token Projection</h2>
-                <pre><code class="language-yaml">spec:
-  serviceAccountName: app-sa
-  volumes:
-  - name: sa-token
-    projected:
-      sources:
-      - serviceAccountToken:
-          path: app-token
-          expirationSeconds: 3600
-          audience: api
-  # ... container volumeMounts reference /var/run/secrets/tokens</code></pre>
-                <aside class="notes">Projected tokens are time-bound and audience-scoped — a major improvement over legacy static tokens. K8s 1.20+ uses bound tokens by default. Always prefer projected tokens.</aside>
             </section>
 
             <!-- Slide 17: Binding Roles to ServiceAccounts -->
             <section>
                 <h2>&#128279; Binding Roles to ServiceAccounts</h2>
-                <pre><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: app-sa-pod-reader
-  namespace: production
-subjects:
-- kind: ServiceAccount
-  name: app-sa
-  namespace: production
-roleRef:
-  kind: Role
-  name: pod-reader
-  apiGroup: rbac.authorization.k8s.io</code></pre>
                 <div class="key-point">
                     <strong>Pattern:</strong> Create a dedicated ServiceAccount per application, grant only the permissions it needs, and reference it in the pod spec with <code>serviceAccountName</code>.
                 </div>
@@ -512,15 +371,6 @@ roleRef:
             <!-- Slide 20: Pod SecurityContext -->
             <section>
                 <h2>&#128451;&#65039; Pod SecurityContext</h2>
-                <pre><code class="language-yaml">spec:
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 3000
-    fsGroup: 2000
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  # ... containers follow</code></pre>
                 <div class="two-columns">
                     <div class="highlight-box">
                         <strong>runAsUser/runAsGroup:</strong> Sets the UID/GID for all containers in the pod
@@ -535,16 +385,6 @@ roleRef:
             <!-- Slide 21: Container SecurityContext -->
             <section>
                 <h2>&#128230; Container SecurityContext</h2>
-                <pre><code class="language-yaml">containers:
-- name: app
-  image: my-app:1.0
-  securityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop: ["ALL"]
-      add: ["NET_BIND_SERVICE"]
-    privileged: false</code></pre>
                 <div class="concept-box">
                     <h4>Container-level overrides pod-level settings</h4>
                     <div class="two-columns">
@@ -568,33 +408,17 @@ roleRef:
             <!-- Slide 22: Building Secure Container Images -->
             <section>
                 <h2>&#128230; Building Secure Container Images</h2>
-                <div class="two-columns">
-                    <div>
-                        <div class="card">
-                            <h4>Minimal Images</h4>
-                            <ul>
-                                <li><strong>Multi-stage builds</strong> — compile in one stage, copy only the binary to the final image</li>
-                                <li><strong>Distroless</strong> — Google's images with no shell or package manager</li>
-                                <li><strong>Alpine</strong> — ~5 MB base; good for interpreted languages</li>
-                                <li><strong>scratch</strong> — empty base for statically linked Go / Rust binaries</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div>
-                        <pre><code class="language-dockerfile"># Multi-stage build example
-FROM golang:1.22 AS build
-WORKDIR /src
-COPY . .
-RUN CGO_ENABLED=0 go build -o /app
-
-FROM gcr.io/distroless/static:nonroot
-COPY --from=build /app /app
-USER 65532:65532
-ENTRYPOINT ["/app"]</code></pre>
-                        <div class="highlight-box" style="margin-top:10px;">
-                            <strong>Result:</strong> Final image is ~15 MB with no shell, no root, no package manager
-                        </div>
-                    </div>
+                <div class="card">
+                    <h4>Minimal Images</h4>
+                    <ul>
+                        <li><strong>Multi-stage builds</strong> — compile in one stage, copy only the binary to the final image</li>
+                        <li><strong>Distroless</strong> — Google's images with no shell or package manager</li>
+                        <li><strong>Alpine</strong> — ~5 MB base; good for interpreted languages</li>
+                        <li><strong>scratch</strong> — empty base for statically linked Go / Rust binaries</li>
+                    </ul>
+                </div>
+                <div class="highlight-box" style="margin-top:10px;">
+                    <strong>Result:</strong> A distroless multi-stage build yields a ~15 MB final image with no shell, no root, no package manager
                 </div>
                 <aside class="notes">Minimize attack surface: fewer binaries means fewer CVEs. Multi-stage builds keep final images lean. The distroless nonroot tag pairs well with the runAsNonRoot security context. Smaller images also speed up node scaling.</aside>
             </section>
@@ -661,16 +485,9 @@ ENTRYPOINT ["/app"]</code></pre>
                 <div class="key-point">
                     <strong>Recommendation:</strong> Target <strong>Restricted</strong> for application workloads. Use <strong>Baseline</strong> as a transition step. Reserve <strong>Privileged</strong> for infrastructure components only.
                 </div>
-                <h4>Enforcing via Namespace Labels</h4>
-                <pre><code class="language-yaml">apiVersion: v1
-kind: Namespace
-metadata:
-  name: production
-  labels:
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/enforce-version: latest
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted</code></pre>
+                <div class="highlight-box">
+                    <strong>Enforcing:</strong> Apply <code>pod-security.kubernetes.io/</code> labels to a namespace — <code>enforce</code> rejects violations, while <code>audit</code> and <code>warn</code> only log them. Migration path: warn &rarr; audit &rarr; enforce.
+                </div>
                 <aside class="notes">Pod Security Standards replace the deprecated PodSecurityPolicy. Most workloads should target Restricted; Baseline is useful during migration. enforce rejects violations; audit/warn logs them without rejecting. Migration path: warn, then audit, then enforce. Built into K8s since 1.25 — namespace labels only, no install needed.</aside>
             </section>
 
@@ -684,33 +501,14 @@ metadata:
             <!-- Slide 25: Principle of Least Privilege -->
             <section>
                 <h2>&#128272; Principle of Least Privilege in Practice</h2>
-                <div class="two-columns">
-                    <div>
-                        <div class="card">
-                            <h4>RBAC Least Privilege</h4>
-                            <ul>
-                                <li>Use Roles over ClusterRoles when possible</li>
-                                <li>Grant specific verbs — avoid <code>*</code></li>
-                                <li>Name specific resources</li>
-                                <li>Use <code>resourceNames</code> for fine-grained control</li>
-                                <li>Audit with <code>kubectl auth can-i</code></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div>
-                        <pre><code class="language-yaml"># Fine-grained: specific resource names
-kind: Role
-metadata: { namespace: production, name: configmap-updater }
-rules:
-- apiGroups: [""]
-  resources: ["configmaps"]
-  resourceNames: ["app-config"]
-  verbs: ["get", "update"]</code></pre>
-                        <pre><code class="language-bash"># Verify permissions
-kubectl auth can-i get pods --as=jane -n dev
-kubectl auth can-i --list \
-  --as=system:serviceaccount:prod:app-sa</code></pre>
-                    </div>
+                <div class="card">
+                    <h4>RBAC Least Privilege</h4>
+                    <ul>
+                        <li>Use Roles over ClusterRoles when possible</li>
+                        <li>Grant specific verbs — avoid <code>*</code></li>
+                        <li>Name specific resources; use <code>resourceNames</code> for fine-grained control</li>
+                        <li>Audit with <code>kubectl auth can-i</code> and <code>--as</code> to test effective permissions</li>
+                    </ul>
                 </div>
                 <aside class="notes">resourceNames restricts access to specific named resources. Use kubectl auth can-i with --as to test effective permissions before deploying changes.</aside>
             </section>
@@ -718,33 +516,17 @@ kubectl auth can-i --list \
             <!-- Slide 26: Audit Logging -->
             <section>
                 <h2>&#128221; Audit Logging</h2>
-                <div class="two-columns">
-                    <div>
-                        <pre><code class="language-yaml">apiVersion: audit.k8s.io/v1
-kind: Policy
-rules:
-- level: Metadata
-  resources:
-  - { group: "", resources: ["secrets"] }
-- level: RequestResponse
-  resources:
-  - { group: "rbac.authorization.k8s.io",
-      resources: ["clusterroles", "clusterrolebindings"] }
-- level: None
-  resources:
-  - { group: "", resources: ["endpoints", "services/status"] }</code></pre>
-                    </div>
-                    <div>
-                        <div class="card">
-                            <h4>Audit Levels</h4>
-                            <ul>
-                                <li><strong>None:</strong> Skip logging</li>
-                                <li><strong>Metadata:</strong> Request metadata only</li>
-                                <li><strong>Request:</strong> Metadata + request body</li>
-                                <li><strong>RequestResponse:</strong> Log everything</li>
-                            </ul>
-                        </div>
-                    </div>
+                <div class="card">
+                    <h4>Audit Levels</h4>
+                    <ul>
+                        <li><strong>None:</strong> Skip logging</li>
+                        <li><strong>Metadata:</strong> Request metadata only</li>
+                        <li><strong>Request:</strong> Metadata + request body</li>
+                        <li><strong>RequestResponse:</strong> Log everything</li>
+                    </ul>
+                </div>
+                <div class="key-point">
+                    <strong>Guidance:</strong> Log RBAC changes at <strong>RequestResponse</strong>; log secrets at <strong>Metadata</strong> only to avoid exposing values.
                 </div>
                 <aside class="notes">Log RBAC changes at RequestResponse level. Log secrets at Metadata only to avoid exposing values. In EKS, enable control plane logging and ship audit logs to CloudWatch.</aside>
             </section>
@@ -777,11 +559,6 @@ rules:
                                 <li>Pin images by SHA256 digest</li>
                             </ul>
                         </div>
-                        <pre style="margin-top: 15px;"><code class="language-yaml"># Pin image by digest
-containers:
-- name: app
-  image: 123456789012.dkr.ecr.us-east-2
-    .amazonaws.com/app@sha256:abc123...</code></pre>
                     </div>
                 </div>
                 <aside class="notes">Never use the latest tag — always use immutable tags or SHA256 digests. Cosign is becoming the standard for signing. Kyverno or OPA/Gatekeeper can enforce registry allowlists and signature verification.</aside>
@@ -869,33 +646,13 @@ containers:
             <section>
                 <h2>&#127991;&#65039; Configuring IRSA</h2>
                 <div class="two-columns">
-                    <div>
+                    <div class="card">
                         <h4>1. Annotate the ServiceAccount</h4>
-                        <pre><code class="language-yaml">apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: my-app-sa
-  namespace: my-namespace
-  annotations:
-    eks.amazonaws.com/role-arn: >-
-      arn:aws:iam::111122223333:role/
-      my-app-irsa-role</code></pre>
-                        <p style="font-size:0.8em;">The annotation tells the EKS webhook which IAM role to inject into pods using this SA.</p>
+                        <p>Add the <code>eks.amazonaws.com/role-arn</code> annotation. It tells the EKS webhook which IAM role to inject into pods using this SA.</p>
                     </div>
-                    <div>
+                    <div class="card">
                         <h4>2. IAM Trust Policy</h4>
-                        <pre><code class="language-json">{
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": { "Federated":
-      "arn:aws:iam::111122223333:oidc-provider/oidc.eks..." },
-    "Action": "sts:AssumeRoleWithWebIdentity",
-    "Condition": { "StringEquals": {
-      "OIDC_ID:aud": "sts.amazonaws.com",
-      "OIDC_ID:sub": "system:serviceaccount:my-namespace:my-app-sa"
-    }}
-  }]
-}</code></pre>
+                        <p>The IAM role trusts the cluster's OIDC provider via <code>sts:AssumeRoleWithWebIdentity</code>, with <code>:aud</code> and <code>:sub</code> conditions scoping it to the exact ServiceAccount.</p>
                     </div>
                 </div>
                 <div class="key-point">
@@ -992,7 +749,7 @@ metadata:
         Reveal.initialize({
             hash: true,
             slideNumber: true,
-            transition: 'slide',
+            transition: 'none',
             plugins: [RevealHighlight, RevealNotes]
         });
     </script>

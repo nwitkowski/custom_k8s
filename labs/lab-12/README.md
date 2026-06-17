@@ -160,15 +160,21 @@ appConfig:
   customMessage: "Hello from Helm!"
 ```
 
-Add the following to the container spec in `mychart/templates/deployment.yaml`:
+Add an `envFrom` to the container in `mychart/templates/deployment.yaml` so the pod loads the ConfigMap. Indentation here is unforgiving, so insert it with this command — it places the block right after `imagePullPolicy:` at the correct indent:
+
+```bash
+perl -i -pe 's/^(\s*imagePullPolicy:.*)$/$1\n          envFrom:\n            - configMapRef:\n                name: {{ include "mychart.fullname" . }}-config/' mychart/templates/deployment.yaml
+```
+
+This inserts (note `envFrom:` aligns with `image:`/`ports:` at 10 spaces):
 
 ```yaml
           envFrom:
-          - configMapRef:
-              name: {{ include "mychart.fullname" . }}-config
+            - configMapRef:
+                name: {{ include "mychart.fullname" . }}-config
 ```
 
-> ⚠️ YAML indentation in Helm templates must be precise. Use `nindent` to control indentation levels.
+> ⚠️ Verify it before moving on: `helm lint mychart/` should pass, and `helm template r mychart/ | grep -A2 envFrom` should show the block. If you edit by hand instead, `envFrom:` must align with `image:`/`ports:`.
 
 ---
 

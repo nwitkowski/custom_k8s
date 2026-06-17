@@ -170,7 +170,7 @@ kubectl logs secret-vol-demo -n lab05-$STUDENT_NAME
 kubectl exec secret-vol-demo -n lab05-$STUDENT_NAME -- cat /etc/db-creds/DB_USERNAME
 ```
 
-> ✅ **Checkpoint:** Secret files are mounted with `0400` permissions.
+> ✅ **Checkpoint:** Secret files are mounted with `0400` permissions. (A plain `ls -l` shows the keys as `lrwxrwxrwx` symlinks — that's Kubernetes' atomic-writer layout; the `0400` applies to the real files they point to, which `ls -lL` dereferences to.)
 
 ---
 

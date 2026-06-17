@@ -78,7 +78,7 @@ FRONTEND_POD=$(kubectl get pod -n lab04-$STUDENT_NAME -l tier=web \
 # Install tools in the nginx container
 kubectl exec $FRONTEND_POD -n lab04-$STUDENT_NAME -- \
   apt-get update -qq && kubectl exec $FRONTEND_POD -n lab04-$STUDENT_NAME -- \
-  apt-get install -y -qq curl dnsutils > /dev/null
+  apt-get install -y -qq curl bind9-dnsutils > /dev/null
 
 # Test DNS resolution
 kubectl exec $FRONTEND_POD -n lab04-$STUDENT_NAME -- nslookup backend-svc

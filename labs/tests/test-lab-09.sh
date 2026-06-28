@@ -360,7 +360,7 @@ echo "Grafana:"
 if kubectl get pods -n monitoring -l app.kubernetes.io/name=grafana --no-headers 2>/dev/null | grep -q Running; then
   kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-stack-grafana 18081:80 &>/dev/null &
   PF_PID=$!
-  sleep 3
+  wait_for_port 18081 20
 
   GF_DS=$(curl -s -u admin:admin "http://localhost:18081/api/datasources" 2>/dev/null)
   assert_contains "grafana datasources include Prometheus" "$GF_DS" "Prometheus"

@@ -23,14 +23,17 @@
 
 ## Lab Parameters
 
-> **Your instructor sets these two regions for your class.** Note them now — you use them throughout the labs:
+> **Two regions, set by your class location.** Note them now — you use them throughout the labs:
 >
-> | Parameter | Example | Used for |
-> |-----------|---------|----------|
-> | **Cloud9 region** | `eu-central-1` | The region you create your Cloud9 IDE in (Step 1, console dropdown) |
-> | **Cluster region** | `eu-west-3` | The region the shared EKS cluster runs in (Step 4, the `CLUSTER_REGION` variable) |
+> | Class location | Cloud9 region | Cluster region |
+> |----------------|---------------|----------------|
+> | **US** | `us-east-1` | `us-east-1` |
+> | **Europe** | `eu-central-1` | `eu-west-3` |
 >
-> The examples above are placeholders — use whatever values your instructor specifies. The Cloud9 region and the cluster region may differ; that cross-region setup is expected and supported, because the connection commands target the cluster region explicitly.
+> - **Cloud9 region** — where you create your Cloud9 IDE (Step 1, console region dropdown).
+> - **Cluster region** — where the shared EKS cluster runs; you set it as `CLUSTER_REGION` (Step 4) and pass it to the setup script.
+>
+> For **US** classes the two regions are the same (`us-east-1`). For **Europe** classes they differ (Cloud9 in `eu-central-1`, cluster in `eu-west-3`); that cross-region setup is expected and supported, because the connection commands target the cluster region explicitly. Your instructor confirms the exact values.
 
 ---
 

@@ -102,7 +102,7 @@ cd custom_k8s/labs/lab-01
 **Quick Setup:** Steps 3 and 4 can be automated with the setup script. After completing Step 2 and the clone above, run the following command (pass the **cluster region** from Lab Parameters as the second argument) and then skip to **Step 5**.
 
 ```bash
-bash scripts/setup-cloud9.sh <usernumber> <cluster-region>   # e.g. bash scripts/setup-cloud9.sh user01 eu-west-3
+bash scripts/setup-cloud9.sh <usernumber> <cluster-region>   # e.g. bash scripts/setup-cloud9.sh user01 us-east-2
 ```
 
 ### Manual Install
@@ -180,7 +180,7 @@ openssl version
 Set the **cluster region** (from Lab Parameters) and connect. Export `CLUSTER_REGION` in each new terminal session — the labs reuse it wherever a region is needed:
 
 ```bash
-export CLUSTER_REGION=<cluster-region>   # e.g. eu-west-3 — matches the Terraform aws_region
+export CLUSTER_REGION=<cluster-region>   # e.g. us-east-2 — matches the Terraform aws_region
 
 aws eks update-kubeconfig \
   --name platform-lab \

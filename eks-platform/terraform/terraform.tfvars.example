@@ -1,6 +1,7 @@
 # Cluster region — where the EKS cluster + VPC are created. Students use this
-# same value as CLUSTER_REGION in Lab 1. Examples: us-east-2, eu-west-3 (Paris),
-# eu-central-1 (Frankfurt). Pick a region with 3+ AZs for the scheduling labs.
+# same value as CLUSTER_REGION in Lab 1. US classes: us-east-2 (cluster) /
+# us-east-1 (Cloud9). EU classes: eu-west-3 (cluster) / eu-central-1 (Cloud9).
+# Pick a region with 3+ AZs for the scheduling labs.
 aws_region           = "us-east-2"
 cluster_name         = "platform-lab"
 cluster_version      = "1.33"

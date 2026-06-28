@@ -6,7 +6,7 @@
 # k8s-lab-role IAM role.
 #
 # Usage:  bash setup-cloud9.sh <usernumber> <cluster-region>
-# Example: bash setup-cloud9.sh user01 eu-west-3
+# Example: bash setup-cloud9.sh user01 us-east-2
 # The cluster region is the Cluster region from Lab 1 Parameters (where the EKS
 # cluster runs) — NOT the Cloud9 region. They differ in a cross-region setup.
 ###############################################################################
@@ -21,8 +21,8 @@ NC='\033[0m'
 CLUSTER_NAME="${CLUSTER_NAME:-platform-lab}"
 # Cluster region: 2nd CLI arg, else the CLUSTER_REGION env var.
 # Deliberately NOT AWS_REGION / AWS_DEFAULT_REGION — on a Cloud9 instance those
-# resolve to the *Cloud9* region (e.g. eu-central-1), which in this cross-region
-# setup is NOT where the cluster lives (e.g. eu-west-3). Using them would connect
+# resolve to the *Cloud9* region (e.g. us-east-1), which in this cross-region
+# setup is NOT where the cluster lives (e.g. us-east-2). Using them would connect
 # kubeconfig to the wrong region. Require the cluster region explicitly instead;
 # validated below.
 REGION="${2:-${CLUSTER_REGION:-}}"
@@ -31,7 +31,7 @@ REGION="${2:-${CLUSTER_REGION:-}}"
 
 if [ -z "${1:-}" ]; then
   echo -e "${RED}Usage: bash setup-cloud9.sh <usernumber> <cluster-region>${NC}"
-  echo "Example: bash setup-cloud9.sh user01 eu-west-3"
+  echo "Example: bash setup-cloud9.sh user01 us-east-2"
   exit 1
 fi
 
@@ -41,7 +41,7 @@ STUDENT_NAME="$1"
 if [ -z "$REGION" ]; then
   echo -e "${RED}ERROR: cluster region not specified.${NC}"
   echo "Pass it as the 2nd argument (the Cluster region from Lab 1 Parameters),"
-  echo "or export CLUSTER_REGION first. Example: bash setup-cloud9.sh $STUDENT_NAME eu-west-3"
+  echo "or export CLUSTER_REGION first. Example: bash setup-cloud9.sh $STUDENT_NAME us-east-2"
   exit 1
 fi
 

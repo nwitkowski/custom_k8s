@@ -18,4 +18,4 @@ spec:
           - key: topology.kubernetes.io/zone
             operator: In
             values:
-            - us-east-2a
+            - ${ZONE}

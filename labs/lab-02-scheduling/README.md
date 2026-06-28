@@ -31,6 +31,11 @@ export STUDENT_NAME=<your-name>
 echo "Student: $STUDENT_NAME"
 kubectl create namespace sched-$STUDENT_NAME
 kubectl config set-context --current --namespace=sched-$STUDENT_NAME
+
+# Pick a real zone from your cluster — the affinity manifests use $ZONE,
+# so this lab works in any region without editing the YAML.
+export ZONE=$(kubectl get nodes -o jsonpath='{.items[0].metadata.labels.topology\.kubernetes\.io/zone}')
+echo "Using zone: $ZONE"
 ```
 
 ---
@@ -48,10 +53,10 @@ kubectl get nodes -o custom-columns=NAME:.metadata.name,ZONE:'.metadata.labels.t
 
 ## Step 2: Node Affinity — Required
 
-This pod **must** run on a node in `us-east-2a` (adjust zone to match your cluster):
+This pod **must** run on a node in your cluster's zone (`$ZONE`, captured in Environment Setup):
 
 ```bash
-envsubst '$STUDENT_NAME' < node-affinity-required.yaml | kubectl apply -f -
+envsubst '$STUDENT_NAME $ZONE' < node-affinity-required.yaml | kubectl apply -f -
 kubectl get pod node-affinity-required -o wide
 ```
 
@@ -74,7 +79,7 @@ kubectl describe pod node-affinity-nope | tail -5
 This pod **prefers** a specific zone but will schedule elsewhere if needed:
 
 ```bash
-envsubst '$STUDENT_NAME' < node-affinity-preferred.yaml | kubectl apply -f -
+envsubst '$STUDENT_NAME $ZONE' < node-affinity-preferred.yaml | kubectl apply -f -
 kubectl get pod node-affinity-preferred -o wide
 ```
 

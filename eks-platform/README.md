@@ -33,7 +33,7 @@ Terraform creates:
 ### Connect
 
 ```bash
-aws eks update-kubeconfig --name platform-lab --region us-east-2
+aws eks update-kubeconfig --name platform-lab --region "$CLUSTER_REGION"   # CLUSTER_REGION = your terraform aws_region (e.g. us-east-2, eu-west-3)
 ```
 
 ---

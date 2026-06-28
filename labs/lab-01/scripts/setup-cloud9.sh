@@ -5,8 +5,10 @@
 # Run this once after creating your Cloud9 environment and attaching the
 # k8s-lab-role IAM role.
 #
-# Usage:  bash setup-cloud9.sh <your-name>
-# Example: bash setup-cloud9.sh jsmith
+# Usage:  bash setup-cloud9.sh <your-name> <cluster-region>
+# Example: bash setup-cloud9.sh jsmith eu-west-3
+# The cluster region is the Cluster region from Lab 1 Parameters (where the EKS
+# cluster runs) — NOT the Cloud9 region. They differ in a cross-region setup.
 ###############################################################################
 
 set -euo pipefail
@@ -16,18 +18,32 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-CLUSTER_NAME="platform-lab"
-REGION="us-east-2"
+CLUSTER_NAME="${CLUSTER_NAME:-platform-lab}"
+# Cluster region: 2nd CLI arg, else the CLUSTER_REGION env var.
+# Deliberately NOT AWS_REGION / AWS_DEFAULT_REGION — on a Cloud9 instance those
+# resolve to the *Cloud9* region (e.g. eu-central-1), which in this cross-region
+# setup is NOT where the cluster lives (e.g. eu-west-3). Using them would connect
+# kubeconfig to the wrong region. Require the cluster region explicitly instead;
+# validated below.
+REGION="${2:-${CLUSTER_REGION:-}}"
 
 # ─── Validate input ────────────────────────────────────────────────────────
 
 if [ -z "${1:-}" ]; then
-  echo -e "${RED}Usage: bash setup-cloud9.sh <your-name>${NC}"
-  echo "Example: bash setup-cloud9.sh jsmith"
+  echo -e "${RED}Usage: bash setup-cloud9.sh <your-name> <cluster-region>${NC}"
+  echo "Example: bash setup-cloud9.sh jsmith eu-west-3"
   exit 1
 fi
 
 STUDENT_NAME="$1"
+
+# Cluster region must be resolvable (CLI arg or env) — no silent fallback.
+if [ -z "$REGION" ]; then
+  echo -e "${RED}ERROR: cluster region not specified.${NC}"
+  echo "Pass it as the 2nd argument (the Cluster region from Lab 1 Parameters),"
+  echo "or export CLUSTER_REGION first. Example: bash setup-cloud9.sh $STUDENT_NAME eu-west-3"
+  exit 1
+fi
 
 # Must be valid in namespace names, service accounts, and app names (RFC 1123)
 if ! echo "$STUDENT_NAME" | grep -Eq '^[a-z][a-z0-9-]{0,19}$'; then

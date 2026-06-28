@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region"
+  description = "AWS region the EKS cluster and its VPC are created in (the 'cluster region'). Students set the same value as CLUSTER_REGION in Lab 1. May differ from the Cloud9 region."
   type        = string
   default     = "us-east-2"
 }

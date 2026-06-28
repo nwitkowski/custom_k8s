@@ -21,10 +21,23 @@
 
 ---
 
+## Lab Parameters
+
+> **Your instructor sets these two regions for your class.** Note them now — you use them throughout the labs:
+>
+> | Parameter | Example | Used for |
+> |-----------|---------|----------|
+> | **Cloud9 region** | `eu-central-1` | The region you create your Cloud9 IDE in (Step 1, console dropdown) |
+> | **Cluster region** | `eu-west-3` | The region the shared EKS cluster runs in (Step 4, the `CLUSTER_REGION` variable) |
+>
+> The examples above are placeholders — use whatever values your instructor specifies. The Cloud9 region and the cluster region may differ; that cross-region setup is expected and supported, because the connection commands target the cluster region explicitly.
+
+---
+
 ## Step 1: Create Your Cloud9 Environment
 
 1. Sign in to the **AWS Management Console** at [https://kiddcorp.signin.aws.amazon.com/console](https://kiddcorp.signin.aws.amazon.com/console) using the credentials provided by the instructor
-2. Set the region to **US East (N. Virginia) / us-east-1** (top-right dropdown)
+2. Set the region to your **Cloud9 region** (from Lab Parameters above) using the top-right dropdown
 3. Search for **Cloud9** in the services search bar and open it
 4. Click **Create environment**
 5. Set **Name** to `k8s-lab-<your-name>`
@@ -38,7 +51,7 @@
 
 You will work in the Cloud9 terminal (bottom panel) for all labs.
 
-> **Note:** Create the Cloud9 environment in **us-east-1**. The EKS cluster runs in **us-east-2** — this cross-region setup is expected and not a problem; the connection commands target us-east-2 explicitly.
+> **Note:** Create the Cloud9 environment in your **Cloud9 region**. If the EKS cluster runs in a different **cluster region**, that cross-region setup is expected and not a problem — the connection commands in Step 4 target the cluster region explicitly via `CLUSTER_REGION`.
 
 ---
 
@@ -83,10 +96,10 @@ cd custom_k8s/labs/lab-01
 
 > ⚠️ **Choose your student name now.** It is used in namespace names, service accounts, and app names across all labs, so it must be **lowercase letters, digits, and hyphens only — no dots, underscores, or uppercase — and 20 characters or fewer** (e.g., `jsmith`, `alice-w`).
 
-**Quick Setup:** Steps 3 and 4 can be automated with the setup script. After completing Step 2 and the clone above, run the following command and then skip to **Step 5**.
+**Quick Setup:** Steps 3 and 4 can be automated with the setup script. After completing Step 2 and the clone above, run the following command (pass the **cluster region** from Lab Parameters as the second argument) and then skip to **Step 5**.
 
 ```bash
-bash scripts/setup-cloud9.sh <your-name>
+bash scripts/setup-cloud9.sh <your-name> <cluster-region>   # e.g. bash scripts/setup-cloud9.sh jsmith eu-west-3
 ```
 
 ### Manual Install
@@ -161,17 +174,21 @@ openssl version
 
 ## Step 4: Connect to the Shared EKS Cluster
 
+Set the **cluster region** (from Lab Parameters) and connect. Export `CLUSTER_REGION` in each new terminal session — the labs reuse it wherever a region is needed:
+
 ```bash
+export CLUSTER_REGION=<cluster-region>   # e.g. eu-west-3 — matches the Terraform aws_region
+
 aws eks update-kubeconfig \
   --name platform-lab \
-  --region us-east-2
+  --region "$CLUSTER_REGION"
 ```
 
 Set your unique student name and verify connectivity (lowercase letters, digits, and hyphens only — same value you gave the setup script):
 
 ```bash
 export STUDENT_NAME=<your-name>
-echo "Student: $STUDENT_NAME"
+echo "Student: $STUDENT_NAME (cluster region: $CLUSTER_REGION)"
 
 kubectl cluster-info
 kubectl config current-context

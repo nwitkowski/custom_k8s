@@ -2,24 +2,66 @@
 ###############################################################################
 # Teardown the platform + cluster.
 #
-# A healthy, fully-applied stack destroys cleanly because the kubernetes/helm/
-# flux providers can reach the live cluster. If the cluster API is already
-# unreachable (half-built / stale state), the helm/k8s/flux/vault resources
-# become un-destroyable phantoms — so on failure we remove those from state and
-# destroy the remaining AWS infra. Re-runnable.
+# Order matters: Kubernetes LoadBalancer Services (ingress-nginx, etc.) provision
+# real AWS NLBs/CLBs that Terraform does NOT manage. If we destroy the cluster
+# first, those load balancers are orphaned and their ENIs block VPC/subnet
+# deletion — Terraform then retries DependencyViolation for ~30+ minutes.
+#
+# So we: (1) delete LoadBalancer Services while the cluster is still up and let
+# the cloud controller deprovision their LBs, (2) sweep any orphaned LBs / VPC
+# endpoints left in the platform-lab VPC, (3) terraform destroy. Re-runnable.
 #
 # Usage:  AWS_PROFILE=org-root bash teardown.sh
 ###############################################################################
 set -uo pipefail
 cd "$(dirname "$0")/terraform"
 
-echo "==> Attempting clean destroy"
+REGION=$(grep -E '^aws_region'  terraform.tfvars | sed 's/.*= *"//; s/".*//')
+CLUSTER=$(grep -E '^cluster_name' terraform.tfvars | sed 's/.*= *"//; s/".*//')
+
+# ─── 1. Delete LoadBalancer Services so their NLBs/CLBs deprovision ──────────
+if kubectl get nodes &>/dev/null; then
+  echo "==> Deleting LoadBalancer Services (releases their NLBs/CLBs)"
+  kubectl get svc -A \
+    -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}' 2>/dev/null \
+    | while IFS=/ read -r ns name; do
+        [ -n "$name" ] && echo "    deleting svc $ns/$name" && kubectl delete svc "$name" -n "$ns" --wait=false &>/dev/null
+      done
+  echo "    waiting 90s for the cloud controller to remove the load balancers..."
+  sleep 90
+else
+  echo "==> Cluster API unreachable — skipping LoadBalancer Service deletion"
+fi
+
+# ─── 2. Sweep any orphaned LBs / VPC endpoints in the platform-lab VPC ───────
+VPC=$(aws ec2 describe-vpcs --region "$REGION" \
+  --filters "Name=tag:Name,Values=*${CLUSTER}*" \
+  --query 'Vpcs[0].VpcId' --output text 2>/dev/null)
+if [ -n "$VPC" ] && [ "$VPC" != "None" ]; then
+  echo "==> Sweeping orphaned load balancers / endpoints in $VPC"
+  for arn in $(aws elbv2 describe-load-balancers --region "$REGION" \
+      --query "LoadBalancers[?VpcId=='$VPC'].LoadBalancerArn" --output text 2>/dev/null); do
+    echo "    deleting NLB/ALB $arn"; aws elbv2 delete-load-balancer --region "$REGION" --load-balancer-arn "$arn" &>/dev/null || true
+  done
+  for name in $(aws elb describe-load-balancers --region "$REGION" \
+      --query "LoadBalancerDescriptions[?VPCId=='$VPC'].LoadBalancerName" --output text 2>/dev/null); do
+    echo "    deleting classic ELB $name"; aws elb delete-load-balancer --region "$REGION" --load-balancer-name "$name" &>/dev/null || true
+  done
+  EPS=$(aws ec2 describe-vpc-endpoints --region "$REGION" \
+    --filters "Name=vpc-id,Values=$VPC" --query 'VpcEndpoints[].VpcEndpointId' --output text 2>/dev/null)
+  [ -n "$EPS" ] && aws ec2 delete-vpc-endpoints --region "$REGION" --vpc-endpoint-ids $EPS &>/dev/null || true
+  echo "    waiting 30s for ENIs to release..."
+  sleep 30
+fi
+
+# ─── 3. terraform destroy (with state-surgery fallback) ─────────────────────
+echo "==> terraform destroy"
 if terraform destroy -auto-approve -input=false; then
   echo "==> Destroy complete."
   exit 0
 fi
 
-echo "==> Clean destroy failed (likely cluster API unreachable). Removing cluster-API-bound resources from state, then destroying AWS infra."
+echo "==> Clean destroy failed (cluster API likely unreachable). Removing cluster-API-bound resources from state, then destroying AWS infra."
 for addr in \
   flux_bootstrap_git.this \
   helm_release.metrics_server \

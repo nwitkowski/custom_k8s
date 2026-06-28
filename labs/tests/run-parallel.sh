@@ -20,7 +20,13 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 JOBS="${JOBS:-6}"
-RESULTS_DIR="${RESULTS_DIR:-$(mktemp -d -t labtests)}"
+# Portable temp dir: GNU/Linux mktemp rejects a template with no X's (BSD/macOS
+# accepts it), so use an explicit XXXXXX template that both honor.
+RESULTS_DIR="${RESULTS_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/labtests-XXXXXX")}"
+mkdir -p "$RESULTS_DIR" 2>/dev/null || true
+if [ -z "${RESULTS_DIR:-}" ] || [ ! -d "$RESULTS_DIR" ]; then
+  echo "ERROR: could not create results directory" >&2; exit 1
+fi
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; NC='\033[0m'
 

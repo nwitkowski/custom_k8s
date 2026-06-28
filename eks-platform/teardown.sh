@@ -52,6 +52,14 @@ if [ -n "$VPC" ] && [ "$VPC" != "None" ]; then
   [ -n "$EPS" ] && aws ec2 delete-vpc-endpoints --region "$REGION" --vpc-endpoint-ids $EPS &>/dev/null || true
   echo "    waiting 30s for ENIs to release..."
   sleep 30
+  # Orphaned k8s-elb-* security groups (left behind when a classic LB is deleted
+  # abruptly) also block VPC deletion — remove them once their ENIs are gone.
+  for sg in $(aws ec2 describe-security-groups --region "$REGION" \
+      --filters "Name=vpc-id,Values=$VPC" "Name=group-name,Values=k8s-elb-*" \
+      --query 'SecurityGroups[].GroupId' --output text 2>/dev/null); do
+    echo "    deleting orphaned LB security group $sg"
+    aws ec2 delete-security-group --region "$REGION" --group-id "$sg" &>/dev/null || true
+  done
 fi
 
 # ─── 3. terraform destroy (with state-surgery fallback) ─────────────────────

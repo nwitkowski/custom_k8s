@@ -111,6 +111,20 @@ cleanup_ns() {
   fi
 }
 
+# Wait until a local port-forward is actually serving (curl connects), up to
+# `timeout` seconds. Fixed sleeps race under parallel load / on small hosts
+# (e.g. Cloud9), so poll instead.
+wait_for_port() {
+  local port="$1" timeout="${2:-20}" i=0
+  while [ $i -lt $timeout ]; do
+    if curl -s -o /dev/null --max-time 2 "http://localhost:${port}/"; then
+      return 0
+    fi
+    sleep 1; i=$((i+1))
+  done
+  return 1
+}
+
 # Print test summary
 summary() {
   local total=$((PASS_COUNT + FAIL_COUNT + SKIP_COUNT))

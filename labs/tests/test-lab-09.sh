@@ -232,7 +232,7 @@ echo "Buggy App PromQL Queries:"
 if kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus --no-headers 2>/dev/null | grep -q Running; then
   kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 18083:9090 &>/dev/null &
   PF_PID=$!
-  sleep 3
+  wait_for_port 18083 20
 
   # Query restart count for buggy-app namespace
   PROM_RESTART_INC=$(curl -s "http://localhost:18083/api/v1/query" \
@@ -300,7 +300,7 @@ echo "Prometheus:"
 if kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus --no-headers 2>/dev/null | grep -q Running; then
   kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 18080:9090 &>/dev/null &
   PF_PID=$!
-  sleep 3
+  wait_for_port 18080 20
 
   # Basic up query
   PROM_UP=$(curl -s "http://localhost:18080/api/v1/query" --data-urlencode 'query=up' 2>/dev/null)

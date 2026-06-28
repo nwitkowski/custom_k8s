@@ -154,10 +154,17 @@ echo "Port-Forward:"
 LOCAL_PORT=$((30000 + ($$ % 10000)))
 kubectl port-forward svc/nginx-lab ${LOCAL_PORT}:80 -n "$NS" &>/dev/null &
 PF_PID=$!
-sleep 3
 
-CURL_BODY=$(curl -s http://localhost:${LOCAL_PORT} 2>/dev/null)
-CURL_HEADERS=$(curl -sI http://localhost:${LOCAL_PORT} 2>/dev/null)
+# Poll until the forward serves the nginx page (racy under parallel load).
+CURL_BODY=""; CURL_HEADERS=""
+for _i in $(seq 1 20); do
+  CURL_BODY=$(curl -s --max-time 3 http://localhost:${LOCAL_PORT} 2>/dev/null)
+  if echo "$CURL_BODY" | grep -q "Welcome to nginx"; then
+    CURL_HEADERS=$(curl -sI --max-time 3 http://localhost:${LOCAL_PORT} 2>/dev/null)
+    break
+  fi
+  sleep 1
+done
 
 kill $PF_PID 2>/dev/null
 wait $PF_PID 2>/dev/null

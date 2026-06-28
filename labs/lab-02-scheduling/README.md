@@ -26,7 +26,7 @@
 ## Environment Setup
 
 ```bash
-cd ~/environment/custom_k8s/labs/extras/scheduling-affinity
+cd ~/environment/custom_k8s/labs/lab-02-scheduling
 export STUDENT_NAME=<your-name>
 echo "Student: $STUDENT_NAME"
 kubectl create namespace sched-$STUDENT_NAME

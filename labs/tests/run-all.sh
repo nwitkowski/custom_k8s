@@ -6,6 +6,7 @@
 #   bash run-all.sh              # Setup platform + run all tests
 #   bash run-all.sh platform     # Platform prerequisites only
 #   bash run-all.sh 1 3 5        # Run specific labs (no setup)
+#   bash run-all.sh 2s           # Run the Lab 2 scheduling companion (alias: scheduling)
 #   bash run-all.sh 1-6          # Run a range
 #   bash run-all.sh --no-setup   # Skip platform setup, run all tests
 #   bash run-all.sh setup        # Run setup only (no tests)
@@ -61,13 +62,13 @@ SETUP_ONLY=false
 if [ $# -eq 0 ]; then
   # Default: setup + all tests
   RUN_SETUP=true
-  LABS_TO_RUN=("platform" $(seq 1 13))
+  LABS_TO_RUN=("platform" 1 2 2s $(seq 3 13))
 elif [ "$1" = "setup" ]; then
   SETUP_ONLY=true
 elif [ "$1" = "--no-setup" ]; then
   shift
   if [ $# -eq 0 ]; then
-    LABS_TO_RUN=("platform" $(seq 1 13))
+    LABS_TO_RUN=("platform" 1 2 2s $(seq 3 13))
   else
     for arg in "$@"; do
       if [[ "$arg" =~ ^([0-9]+)-([0-9]+)$ ]]; then
@@ -133,6 +134,13 @@ ORIG_NS=$(kubectl config view --minify -o jsonpath='{..namespace}' 2>/dev/null)
 for lab in "${LABS_TO_RUN[@]}"; do
   if [ "$lab" = "platform" ]; then
     run_test_capture "platform" "$SCRIPT_DIR/test-platform.sh"
+  elif [ "$lab" = "2s" ] || [ "$lab" = "scheduling" ]; then
+    script="$SCRIPT_DIR/test-lab-02-scheduling.sh"
+    if [ -f "$script" ]; then
+      run_test_capture "lab-02-scheduling" "$script"
+    else
+      echo -e "${YELLOW}Skipping lab 02-scheduling — test not found${NC}"
+    fi
   else
     padded=$(printf "%02d" "$lab")
     script="$SCRIPT_DIR/test-lab-${padded}.sh"

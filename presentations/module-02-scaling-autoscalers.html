@@ -625,6 +625,24 @@
                 <aside class="notes">60-70% CPU target leaves headroom for scaling lag. Load test to validate. Pod autoscaling requires sufficient cluster node capacity (Cluster Autoscaler).</aside>
             </section>
 
+            <!-- Lab Callout: Autoscaling (teaching above precedes the lab) -->
+            <section data-background="linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%)" class="lab-callout">
+                <h2>&#128295; Lab 2: Configuring Autoscaling</h2>
+                <h3>Hands-on: HPA, VPA, and Cluster Autoscaler</h3>
+                <ul>
+                    <li>Deploy an application with resource requests and limits</li>
+                    <li>Create an HPA on CPU, generate load, and observe scaling</li>
+                    <li>Apply a v2 HPA and tune behavior policies (stabilization windows)</li>
+                    <li>Configure a VPA in Off mode and review its recommendations</li>
+                    <li>Trigger unschedulable pods and watch the Cluster Autoscaler add nodes</li>
+                    <li>Monitor with <code>kubectl top</code> and <code>kubectl get hpa -w</code></li>
+                </ul>
+                <div class="highlight-box">
+                    <strong>Duration:</strong> ~45 minutes
+                </div>
+                <aside class="notes">Uses a CPU-intensive app and load generator. Participants observe HPA scaling in real time and tune behavior policies.</aside>
+            </section>
+
             <!-- Section Divider: Scheduling & Placement -->
             <section data-background="linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)" class="section-divider">
                 <h2>&#127919; Scheduling &amp; Placement</h2>
@@ -720,22 +738,22 @@
                 <aside class="notes">Ties back to Lab 1 — the kube-system agents you observed (aws-node, kube-proxy, ebs-csi-node) are all DaemonSets.</aside>
             </section>
 
-            <!-- Lab Callout -->
+            <!-- Lab Callout: Scheduling (teaching above precedes the lab) -->
             <section data-background="linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%)" class="lab-callout">
-                <h2>&#128295; Lab 2: Configuring Autoscaling</h2>
-                <h3>Hands-on: HPA, VPA, and Cluster Autoscaler</h3>
+                <h2>&#128295; Lab 2 (Part 2): Scheduling and Placement</h2>
+                <h3>Hands-on: Affinity, Taints, Topology Spread &amp; DaemonSets</h3>
                 <ul>
-                    <li>Deploy an application with resource requests and limits</li>
-                    <li>Create an HPA on CPU, generate load, and observe scaling</li>
-                    <li>Apply a v2 HPA and tune behavior policies (stabilization windows)</li>
-                    <li>Configure a VPA in Off mode and review its recommendations</li>
-                    <li>Trigger unschedulable pods and watch the Cluster Autoscaler add nodes</li>
-                    <li>Monitor with <code>kubectl top</code> and <code>kubectl get hpa -w</code></li>
+                    <li>Pin a Pod to a zone with required node affinity &mdash; and watch an impossible match stay <code>Pending</code></li>
+                    <li>Co-locate a web Pod with its cache using pod affinity</li>
+                    <li>Spread replicas across nodes with pod anti-affinity</li>
+                    <li>Inspect taints and add a toleration to a Pod</li>
+                    <li>Balance Pods across zones with topology spread constraints</li>
+                    <li>Observe the cluster's DaemonSets &mdash; one Pod per node</li>
                 </ul>
                 <div class="highlight-box">
-                    <strong>Duration:</strong> ~45 minutes
+                    <strong>Duration:</strong> ~25 minutes
                 </div>
-                <aside class="notes">Uses a CPU-intensive app and load generator. Participants observe HPA scaling in real time and tune behavior policies.</aside>
+                <aside class="notes">Companion lab to the scheduling section. On a shared cluster, taints and DaemonSets are observed rather than created. Lab files live in labs/lab-02-scheduling.</aside>
             </section>
 
             <!-- Summary -->

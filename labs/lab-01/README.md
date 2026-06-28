@@ -27,13 +27,13 @@
 >
 > | Class location | Cloud9 region | Cluster region |
 > |----------------|---------------|----------------|
-> | **US** | `us-east-1` | `us-east-1` |
+> | **US** | `us-east-1` | `us-east-2` |
 > | **Europe** | `eu-central-1` | `eu-west-3` |
 >
 > - **Cloud9 region** — where you create your Cloud9 IDE (Step 1, console region dropdown).
 > - **Cluster region** — where the shared EKS cluster runs; you set it as `CLUSTER_REGION` (Step 4) and pass it to the setup script.
 >
-> For **US** classes the two regions are the same (`us-east-1`). For **Europe** classes they differ (Cloud9 in `eu-central-1`, cluster in `eu-west-3`); that cross-region setup is expected and supported, because the connection commands target the cluster region explicitly. Your instructor confirms the exact values.
+> Both class locations use a **cross-region** setup — your Cloud9 IDE and the EKS cluster sit in different regions. That is expected and supported, because every connection command targets the cluster region explicitly (never the Cloud9 instance's own region). Your instructor confirms the exact values.
 
 ---
 

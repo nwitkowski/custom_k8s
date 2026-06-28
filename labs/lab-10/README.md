@@ -48,7 +48,7 @@ Set your student identifier (use your first name or assigned number):
 ```bash
 cd ~/environment/custom_k8s/labs/lab-10
 # Set your unique student name
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME"
 kubectl config set-context --current --namespace=default
 ```
@@ -309,7 +309,7 @@ kubectl delete namespace probes-lab-$STUDENT_NAME
 kubectl get namespace probes-lab-$STUDENT_NAME
 ```
 
-> ✅ **Expected:** `Error from server (NotFound): namespaces "probes-lab-<your-name>" not found`
+> ✅ **Expected:** `Error from server (NotFound): namespaces "probes-lab-<usernumber>" not found`
 
 ---
 

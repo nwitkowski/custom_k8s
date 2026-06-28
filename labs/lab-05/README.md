@@ -24,7 +24,7 @@
 
 ```bash
 cd ~/environment/custom_k8s/labs/lab-05
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME"
 kubectl config set-context --current --namespace=default
 ```
@@ -229,7 +229,7 @@ kubectl exec projected-demo -n lab05-$STUDENT_NAME -- cat /etc/projected/namespa
 kubectl exec projected-demo -n lab05-$STUDENT_NAME -- cat /etc/projected/labels
 ```
 
-> ✅ **Checkpoint:** `APP_ENV` returns `production`, `DB_USERNAME` returns `app_user`, and `namespace` returns `lab05-<your-name>`. All four files coexist under `/etc/projected`.
+> ✅ **Checkpoint:** `APP_ENV` returns `production`, `DB_USERNAME` returns `app_user`, and `namespace` returns `lab05-<usernumber>`. All four files coexist under `/etc/projected`.
 
 ---
 

@@ -27,7 +27,7 @@
 
 ```bash
 cd ~/environment/custom_k8s/labs/lab-02-scheduling
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME"
 kubectl create namespace sched-$STUDENT_NAME
 kubectl config set-context --current --namespace=sched-$STUDENT_NAME

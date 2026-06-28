@@ -31,7 +31,7 @@
 
 ```bash
 cd ~/environment/custom_k8s/labs/lab-09
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME"
 kubectl config set-context --current --namespace=default
 ```

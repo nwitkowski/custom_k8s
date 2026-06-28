@@ -26,7 +26,7 @@
 
 ```bash
 cd ~/environment/custom_k8s/labs/lab-02
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME"
 kubectl config set-context --current --namespace=default
 ```
@@ -117,7 +117,7 @@ In your **second terminal**, watch the HPA and pods respond:
 
 ```bash
 # Set your student name in the new terminal
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 
 # Watch HPA status (updates every 15 seconds)
 kubectl get hpa php-apache -n lab02-$STUDENT_NAME --watch

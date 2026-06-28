@@ -5,8 +5,8 @@
 # Run this once after creating your Cloud9 environment and attaching the
 # k8s-lab-role IAM role.
 #
-# Usage:  bash setup-cloud9.sh <your-name> <cluster-region>
-# Example: bash setup-cloud9.sh jsmith eu-west-3
+# Usage:  bash setup-cloud9.sh <usernumber> <cluster-region>
+# Example: bash setup-cloud9.sh user01 eu-west-3
 # The cluster region is the Cluster region from Lab 1 Parameters (where the EKS
 # cluster runs) — NOT the Cloud9 region. They differ in a cross-region setup.
 ###############################################################################
@@ -30,8 +30,8 @@ REGION="${2:-${CLUSTER_REGION:-}}"
 # ─── Validate input ────────────────────────────────────────────────────────
 
 if [ -z "${1:-}" ]; then
-  echo -e "${RED}Usage: bash setup-cloud9.sh <your-name> <cluster-region>${NC}"
-  echo "Example: bash setup-cloud9.sh jsmith eu-west-3"
+  echo -e "${RED}Usage: bash setup-cloud9.sh <usernumber> <cluster-region>${NC}"
+  echo "Example: bash setup-cloud9.sh user01 eu-west-3"
   exit 1
 fi
 
@@ -50,7 +50,7 @@ if ! echo "$STUDENT_NAME" | grep -Eq '^[a-z][a-z0-9-]{0,19}$'; then
   echo -e "${RED}ERROR: Invalid student name: $STUDENT_NAME${NC}"
   echo "Use lowercase letters, digits, and hyphens only (start with a letter,"
   echo "20 characters max). No dots, underscores, or uppercase."
-  echo "Examples: jsmith, alice-w"
+  echo "Examples: user01, user02"
   exit 1
 fi
 

@@ -32,7 +32,7 @@ Approximately 30-40 minutes
 
 ```bash
 cd ~/environment/custom_k8s/labs/lab-06
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME"
 kubectl config set-context --current --namespace=default
 ```

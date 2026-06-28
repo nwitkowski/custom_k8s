@@ -36,11 +36,11 @@
 
 ## Step 1: Create Your Cloud9 Environment
 
-1. Sign in to the **AWS Management Console** at [https://kiddcorp.signin.aws.amazon.com/console](https://kiddcorp.signin.aws.amazon.com/console) using the credentials provided by the instructor
+1. Sign in to the **AWS Management Console** at [https://kiddcorp.signin.aws.amazon.com/console](https://kiddcorp.signin.aws.amazon.com/console) using your assigned **username** — your `usernumber` (e.g. `user01`) — and the password provided by the instructor
 2. Set the region to your **Cloud9 region** (from Lab Parameters above) using the top-right dropdown
 3. Search for **Cloud9** in the services search bar and open it
 4. Click **Create environment**
-5. Set **Name** to `k8s-lab-<your-name>`
+5. Set **Name** to `k8s-lab-<usernumber>`
 6. Set **Environment type** to New EC2 instance
 7. Set **Instance type** to `m5.large`
 8. Set **Platform** to Amazon Linux
@@ -68,7 +68,7 @@ Cloud9 managed credentials cannot access EKS. The `k8s-lab-role` IAM role was cr
 ### Attach the Role to Your Instance
 
 1. Open the **EC2 Console** in a new browser tab
-2. Find your Cloud9 instance (named `aws-cloud9-k8s-lab-<your-name>-...`)
+2. Find your Cloud9 instance (named `aws-cloud9-k8s-lab-<usernumber>-...`)
 3. Select the instance → **Actions → Security → Modify IAM role**
 4. Choose `k8s-lab-role` → click **Update IAM role**
 
@@ -94,12 +94,12 @@ git clone https://github.com/jwkidd3/custom_k8s.git
 cd custom_k8s/labs/lab-01
 ```
 
-> ⚠️ **Choose your student name now.** It is used in namespace names, service accounts, and app names across all labs, so it must be **lowercase letters, digits, and hyphens only — no dots, underscores, or uppercase — and 20 characters or fewer** (e.g., `jsmith`, `alice-w`).
+> ⚠️ **Your identifier is your `usernumber`** — the exact username you signed in to AWS with (e.g. `user01`). Use it for everything: the Cloud9 environment name suffix (Step 1), and `STUDENT_NAME` in every lab. It keys all your namespaces, service accounts, and app names, and is already RFC&nbsp;1123-safe (lowercase letters, digits, hyphens; starts with a letter; ≤&nbsp;20 chars).
 
 **Quick Setup:** Steps 3 and 4 can be automated with the setup script. After completing Step 2 and the clone above, run the following command (pass the **cluster region** from Lab Parameters as the second argument) and then skip to **Step 5**.
 
 ```bash
-bash scripts/setup-cloud9.sh <your-name> <cluster-region>   # e.g. bash scripts/setup-cloud9.sh jsmith eu-west-3
+bash scripts/setup-cloud9.sh <usernumber> <cluster-region>   # e.g. bash scripts/setup-cloud9.sh user01 eu-west-3
 ```
 
 ### Manual Install
@@ -184,10 +184,10 @@ aws eks update-kubeconfig \
   --region "$CLUSTER_REGION"
 ```
 
-Set your unique student name and verify connectivity (lowercase letters, digits, and hyphens only — same value you gave the setup script):
+Set `STUDENT_NAME` to your **usernumber** (the same username you logged in with — and gave the setup script) and verify connectivity:
 
 ```bash
-export STUDENT_NAME=<your-name>
+export STUDENT_NAME=<usernumber>
 echo "Student: $STUDENT_NAME (cluster region: $CLUSTER_REGION)"
 
 kubectl cluster-info

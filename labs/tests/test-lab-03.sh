@@ -99,6 +99,22 @@ else
   fail "no PV bound to PVC"
 fi
 
+# EBS-backed PVs are pinned to the AZ they were provisioned in: the PV carries a
+# nodeAffinity constraint referencing topology.kubernetes.io/zone. Skip on
+# storage backends (hostPath, NFS, etc.) that don't set nodeAffinity.
+if [ -n "$PV_NAME" ]; then
+  PV_AFFINITY=$(kubectl get pv "$PV_NAME" -o jsonpath='{.spec.nodeAffinity}' 2>/dev/null)
+  if [ -n "$PV_AFFINITY" ]; then
+    PV_AFF_KEYS=$(kubectl get pv "$PV_NAME" \
+      -o jsonpath='{.spec.nodeAffinity.required.nodeSelectorTerms[*].matchExpressions[*].key}' 2>/dev/null)
+    assert_contains "PV nodeAffinity pins volume to a zone" "$PV_AFF_KEYS" "topology.kubernetes.io/zone"
+  else
+    skip "PV has no nodeAffinity (non-EBS storage backend)"
+  fi
+else
+  skip "no PV bound — skipping nodeAffinity zone check"
+fi
+
 ###############################################################################
 # Step 4: Data persistence across pod deletion
 ###############################################################################
@@ -313,5 +329,6 @@ echo "Cleanup:"
 kubectl delete statefulset web -n "$NS" --timeout=60s &>/dev/null
 kubectl delete pvc --all -n "$NS" --timeout=60s &>/dev/null
 cleanup_ns "$NS"
+assert_cmd_fails "namespace removed after teardown" kubectl get namespace "$NS"
 
 summary

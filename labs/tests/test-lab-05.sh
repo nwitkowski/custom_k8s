@@ -102,6 +102,19 @@ assert_contains "volume mount /etc/nginx/conf.d/default.conf exists" "$VOL_NGINX
 VOL_PROPS=$(kubectl exec volume-mount-demo -n "$NS" -- cat /etc/app/app.properties 2>/dev/null)
 assert_contains "volume mount /etc/app/app.properties exists" "$VOL_PROPS" "db.host"
 
+# The mounted nginx.conf defines a /health location that returns "OK".
+# Gate behind pod-ready; skip if curl/exec is unavailable rather than fail.
+if wait_for_pod "$NS" volume-mount-demo 30; then
+  VOL_HEALTH=$(kubectl exec volume-mount-demo -n "$NS" -- curl -s http://localhost/health 2>/dev/null)
+  if [ -n "$VOL_HEALTH" ]; then
+    assert_contains "mounted nginx.conf serves /health -> OK" "$VOL_HEALTH" "OK"
+  else
+    skip "/health check unavailable (curl/exec returned nothing)"
+  fi
+else
+  skip "volume-mount-demo not ready — skipping /health check"
+fi
+
 # --- Step 6: Create opaque Secret --------------------------------------------
 
 echo ""
@@ -179,6 +192,15 @@ SV_MODE=$(kubectl get pod secret-vol-demo -n "$NS" \
   -o jsonpath='{.spec.volumes[?(@.name=="db-creds")].secret.defaultMode}' 2>/dev/null)
 assert_eq "secret volume defaultMode is 0400 (256)" "256" "$SV_MODE"
 
+# Verify the REAL on-disk permissions (not just the spec defaultMode).
+# -L dereferences the atomic-writer symlink to the underlying file.
+SV_PERM=$(kubectl exec secret-vol-demo -n "$NS" -- stat -L -c %a /etc/db-creds/DB_USERNAME 2>/dev/null)
+if [ -n "$SV_PERM" ]; then
+  assert_eq "secret file on-disk perms are 400" "400" "$SV_PERM"
+else
+  skip "stat unavailable in pod — skipping on-disk perms check"
+fi
+
 # --- Step 10: Immutable ConfigMap ---------------------------------------------
 
 echo ""
@@ -191,6 +213,22 @@ assert_eq "immutable-app-config immutable=true" "true" "$IMM"
 
 IMM_VER=$(kubectl get configmap immutable-app-config -n "$NS" -o jsonpath='{.data.APP_VERSION}' 2>/dev/null)
 assert_eq "immutable-app-config APP_VERSION=2.1.0" "2.1.0" "$IMM_VER"
+
+# Key teaching point: an immutable ConfigMap must REJECT data changes.
+assert_cmd_fails "immutable ConfigMap rejects patch to data" \
+  kubectl patch configmap immutable-app-config -n "$NS" \
+  --type merge -p '{"data":{"APP_VERSION":"3.0.0"}}'
+
+assert_cmd_fails "immutable ConfigMap rejects apply that changes data" \
+  bash -c "echo 'apiVersion: v1
+kind: ConfigMap
+metadata: {name: immutable-app-config, namespace: $NS}
+data: {APP_VERSION: \"3.0.0\", FEATURE_FLAGS: \"dark-mode=true,beta-api=false\"}
+immutable: true' | kubectl apply -f -"
+
+# Confirm the original value is unchanged after the rejected attempts.
+IMM_VER_AFTER=$(kubectl get configmap immutable-app-config -n "$NS" -o jsonpath='{.data.APP_VERSION}' 2>/dev/null)
+assert_eq "immutable-app-config APP_VERSION still 2.1.0 after rejected edits" "2.1.0" "$IMM_VER_AFTER"
 
 # --- Step 11: Projected Volume ------------------------------------------------
 
@@ -208,6 +246,15 @@ assert_eq "projected volume has DB_USERNAME" "app_user" "$PROJ_USER"
 
 PROJ_NS=$(kubectl exec projected-demo -n "$NS" -- cat /etc/projected/namespace 2>/dev/null)
 assert_eq "projected volume has namespace" "$NS" "$PROJ_NS"
+
+# Downward API labels file should reflect the pod's labels (app, version).
+PROJ_LABELS=$(kubectl exec projected-demo -n "$NS" -- cat /etc/projected/labels 2>/dev/null)
+if [ -n "$PROJ_LABELS" ]; then
+  assert_contains "projected labels file has app label" "$PROJ_LABELS" 'app="projected-demo"'
+  assert_contains "projected labels file has version label" "$PROJ_LABELS" 'version="v1"'
+else
+  skip "projected labels file unavailable — skipping Downward API labels check"
+fi
 
 # --- Step 12: Vault / External Secrets Operator --------------------------------
 

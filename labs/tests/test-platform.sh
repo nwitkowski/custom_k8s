@@ -178,6 +178,22 @@ else
   fail "GatewayClass 'eg' not found"
 fi
 
+# platform-gateway Gateway resource — not just the class. A usable Gateway is
+# either Programmed (status condition) or has been assigned an address.
+if kubectl get gateway platform-gateway -n envoy-gateway-system &>/dev/null 2>&1; then
+  GW_PROGRAMMED=$(kubectl get gateway platform-gateway -n envoy-gateway-system \
+    -o jsonpath='{.status.conditions[?(@.type=="Programmed")].status}' 2>/dev/null)
+  GW_ADDR=$(kubectl get gateway platform-gateway -n envoy-gateway-system \
+    -o jsonpath='{.status.addresses[0].value}' 2>/dev/null)
+  if [ "$GW_PROGRAMMED" = "True" ] || [ -n "$GW_ADDR" ]; then
+    pass "Gateway 'platform-gateway' is Programmed / has an address"
+  else
+    skip "Gateway 'platform-gateway' exists but not yet Programmed"
+  fi
+else
+  skip "Gateway 'platform-gateway' not found"
+fi
+
 # ─── Security ────────────────────────────────────────────────────────────────
 
 echo ""
@@ -194,6 +210,15 @@ else
   fail "no Kyverno ClusterPolicies found"
 fi
 
+# Expected ClusterPolicies from flux/policies — verify by name.
+for POLICY in require-resource-limits require-team-label disallow-privileged require-run-as-non-root generate-resource-quota; do
+  if kubectl get clusterpolicy "$POLICY" &>/dev/null 2>&1; then
+    pass "ClusterPolicy '$POLICY' exists"
+  else
+    skip "ClusterPolicy '$POLICY' not found"
+  fi
+done
+
 # External Secrets Operator
 require_component "external-secrets-operator running" "external-secrets" "external-secrets"
 
@@ -204,6 +229,20 @@ if kubectl get clustersecretstore &>/dev/null 2>&1; then
     pass "ClusterSecretStore configured ($CSS_COUNT found)"
   else
     fail "ClusterSecretStore CRD exists but none configured"
+  fi
+
+  # vault-store should actively report Ready=True (validates the Vault auth
+  # path, not just that the object was created).
+  if kubectl get clustersecretstore vault-store &>/dev/null 2>&1; then
+    CSS_READY=$(kubectl get clustersecretstore vault-store \
+      -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)
+    if [ "$CSS_READY" = "True" ]; then
+      pass "ClusterSecretStore 'vault-store' reports Ready=True"
+    else
+      skip "ClusterSecretStore 'vault-store' not Ready yet (status: ${CSS_READY:-none})"
+    fi
+  else
+    skip "ClusterSecretStore 'vault-store' not found"
   fi
 else
   fail "ClusterSecretStore CRD not installed"
@@ -231,6 +270,21 @@ require_component "alertmanager running" "alertmanager" "monitoring"
 
 # Blackbox exporter
 require_component "blackbox-exporter running" "blackbox" "monitoring"
+
+# external-endpoints blackbox Probe CR (defines what blackbox actually probes)
+if kubectl get probe external-endpoints -n monitoring &>/dev/null 2>&1; then
+  pass "blackbox Probe 'external-endpoints' exists in monitoring namespace"
+else
+  skip "blackbox Probe 'external-endpoints' not found"
+fi
+
+# Jaeger (all-in-one tracing backend — deployed for the observability lab)
+if kubectl get pods -n monitoring --no-headers 2>/dev/null | grep -iE "jaeger" | grep -q Running; then
+  JAEGER_POD=$(kubectl get pods -n monitoring --no-headers 2>/dev/null | grep -iE "jaeger" | grep Running | head -1 | awk '{print $1}')
+  pass "jaeger running in monitoring namespace ($JAEGER_POD)"
+else
+  skip "jaeger not running in monitoring namespace"
+fi
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 

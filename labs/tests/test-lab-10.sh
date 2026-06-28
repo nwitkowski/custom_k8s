@@ -26,6 +26,20 @@ assert_eq "no-probes-app has no liveness probe" "" "$NOPROBE_LIVE"
 NOPROBE_READY=$(kubectl get deployment no-probes-app -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].readinessProbe}' 2>/dev/null)
 assert_eq "no-probes-app has no readiness probe" "" "$NOPROBE_READY"
 
+# Simulate the failure from the README: break nginx inside the pod. With no
+# probe, Kubernetes cannot detect it — the pod stays Running and is NOT restarted.
+NOPROBE_POD=$(kubectl get pod -l app=no-probes-app -n "$NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ -n "$NOPROBE_POD" ] && wait_for_pod "$NS" "$NOPROBE_POD" 30; then
+  kubectl exec "$NOPROBE_POD" -n "$NS" -- sh -c "rm -f /etc/nginx/conf.d/default.conf && nginx -s reload" &>/dev/null
+  sleep 20
+  NOPROBE_PHASE=$(kubectl get pod "$NOPROBE_POD" -n "$NS" -o jsonpath='{.status.phase}' 2>/dev/null)
+  NOPROBE_RESTARTS=$(kubectl get pod "$NOPROBE_POD" -n "$NS" -o jsonpath='{.status.containerStatuses[0].restartCount}' 2>/dev/null)
+  assert_eq "no-probes pod stays Running after failure (the blind spot)" "Running" "$NOPROBE_PHASE"
+  assert_eq "no-probes pod is NOT restarted (restartCount 0)" "0" "$NOPROBE_RESTARTS"
+else
+  skip "no-probes pod not ready — skipping blind-spot simulation"
+fi
+
 # ─── Step 2: Liveness probe (HTTP) ───────────────────────────────────────
 
 echo ""
@@ -38,6 +52,27 @@ assert_eq "liveness probe path is /" "/" "$LIVENESS_PATH"
 
 LIVENESS_PORT=$(kubectl get deployment liveness-http -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.httpGet.port}' 2>/dev/null)
 assert_eq "liveness probe port is 80" "80" "$LIVENESS_PORT"
+
+# Trigger the liveness failure (README): remove the served index page so the
+# HTTP probe starts returning 404. Poll for the container restart.
+LIVE_POD=$(kubectl get pod -l app=liveness-http -n "$NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ -n "$LIVE_POD" ] && wait_for_pod "$NS" "$LIVE_POD" 30; then
+  kubectl exec "$LIVE_POD" -n "$NS" -- rm -f /usr/share/nginx/html/index.html &>/dev/null
+  # failureThreshold 3 x periodSeconds 10 ≈ 30s; poll up to ~75s.
+  LIVE_RESTARTED=0
+  for i in $(seq 1 15); do
+    RC=$(kubectl get pod "$LIVE_POD" -n "$NS" -o jsonpath='{.status.containerStatuses[0].restartCount}' 2>/dev/null)
+    if [ -n "$RC" ] && [ "$RC" -gt 0 ]; then LIVE_RESTARTED=1; break; fi
+    sleep 5
+  done
+  if [ "$LIVE_RESTARTED" -eq 1 ]; then
+    pass "liveness failure restarted the container (restartCount > 0)"
+  else
+    skip "liveness restart not observed within timeout"
+  fi
+else
+  skip "liveness-http pod not ready — skipping liveness failure trigger"
+fi
 
 # ─── Step 3: Readiness probe + service ───────────────────────────────────
 
@@ -59,6 +94,56 @@ assert_eq "readiness-app also has liveness probe on /" "/" "$READINESS_LIVE_PATH
 
 SVC_EXISTS=$(kubectl get svc readiness-svc -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
 assert_eq "readiness-svc Service created" "1" "$SVC_EXISTS"
+
+# Behavioral: drive readiness via the /ready file and watch Service endpoints.
+# Pods must at least be scheduled/Running for exec; skip if they can't converge.
+count_endpoints() {
+  kubectl get endpoints readiness-svc -n "$NS" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null | wc -w | tr -d ' '
+}
+
+if wait_for_pods "$NS" "app=readiness-app" 3 90; then
+  # Create the /ready endpoint on all pods so they pass the readiness probe.
+  for pod in $(kubectl get pods -l app=readiness-app -n "$NS" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+    kubectl exec "$pod" -n "$NS" -- sh -c "echo OK > /usr/share/nginx/html/ready" &>/dev/null
+  done
+
+  # successThreshold 2 x periodSeconds 5 ≈ 10s to become Ready; poll up to ~60s.
+  EP=0
+  for i in $(seq 1 12); do
+    EP=$(count_endpoints)
+    [ "$EP" -ge 3 ] && break
+    sleep 5
+  done
+
+  if [ "$EP" -ge 3 ]; then
+    pass "readiness-svc has 3 endpoints when all pods are ready"
+
+    # Break readiness on one pod and confirm it drops out of the endpoints.
+    BREAK_POD=$(kubectl get pod -l app=readiness-app -n "$NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    kubectl exec "$BREAK_POD" -n "$NS" -- rm -f /usr/share/nginx/html/ready &>/dev/null
+    EP_DOWN=3
+    for i in $(seq 1 12); do
+      EP_DOWN=$(count_endpoints)
+      [ "$EP_DOWN" -le 2 ] && break
+      sleep 5
+    done
+    assert_eq "endpoints drop to 2 when one pod is unready" "2" "$EP_DOWN"
+
+    # Restore readiness and confirm the endpoint returns.
+    kubectl exec "$BREAK_POD" -n "$NS" -- sh -c "echo OK > /usr/share/nginx/html/ready" &>/dev/null
+    EP_UP=$EP_DOWN
+    for i in $(seq 1 12); do
+      EP_UP=$(count_endpoints)
+      [ "$EP_UP" -ge 3 ] && break
+      sleep 5
+    done
+    assert_eq "endpoints return to 3 after readiness restored" "3" "$EP_UP"
+  else
+    skip "readiness-app endpoints did not reach 3 — skipping endpoint behavior checks"
+  fi
+else
+  skip "readiness-app pods did not schedule — skipping endpoint behavior checks"
+fi
 
 # ─── Step 4: Startup probe ───────────────────────────────────────────────
 
@@ -119,7 +204,8 @@ envsubst '$STUDENT_NAME' < "$LAB_DIR/exec-probe-app.yaml" | kubectl apply -f - &
 wait_for_deploy "$NS" exec-probe-app 60
 
 EXEC_CMD=$(kubectl get deployment exec-probe-app -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].livenessProbe.exec.command}' 2>/dev/null)
-echo "$EXEC_CMD" | grep -q "cat" && assert_eq "exec probe command contains cat" "true" "true" || assert_eq "exec probe command contains cat" "true" "false"
+assert_contains "exec probe command runs 'cat'" "$EXEC_CMD" "cat"
+assert_contains "exec probe command targets /tmp/healthy" "$EXEC_CMD" "/tmp/healthy"
 
 # ─── Step 8: Graceful Shutdown ────────────────────────────────────────────
 
@@ -143,4 +229,12 @@ assert_eq "graceful-app has readiness probe" "/" "$GRACEFUL_READY"
 # ─── Cleanup ──────────────────────────────────────────────────────────────
 
 cleanup_ns "$NS"
+
+# Step 9: confirm the namespace is gone after teardown (allow terminating delay).
+for i in $(seq 1 12); do
+  kubectl get namespace "$NS" &>/dev/null || break
+  sleep 5
+done
+assert_cmd_fails "probes-lab namespace deleted after cleanup" kubectl get namespace "$NS"
+
 summary

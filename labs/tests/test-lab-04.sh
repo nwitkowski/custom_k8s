@@ -271,5 +271,6 @@ kubectl delete svc frontend-lb -n "$NS" --timeout=60s &>/dev/null 2>&1
 kubectl delete pod test-tools -n "$NS" --grace-period=0 --force &>/dev/null 2>&1
 kubectl delete svc --all -n "$NS" --timeout=30s &>/dev/null 2>&1
 cleanup_ns "$NS"
+assert_cmd_fails "namespace removed after teardown" kubectl get namespace "$NS"
 
 summary

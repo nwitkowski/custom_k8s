@@ -66,11 +66,13 @@ echo "Step 3 — ECR Integration:"
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
 if [ -n "$AWS_ACCOUNT_ID" ]; then
   pass "AWS account accessible: $AWS_ACCOUNT_ID"
-  export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.us-east-2.amazonaws.com"
+  # Cluster region: honor CLUSTER_REGION/AWS_REGION, else fall back to us-east-2.
+  REGION="${CLUSTER_REGION:-${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-2}}}"
+  export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
   export ECR_REPO="cicd-lab-app-$STUDENT_NAME"
 
   # Test ECR login
-  ECR_LOGIN=$(aws ecr get-login-password --region us-east-2 2>/dev/null | \
+  ECR_LOGIN=$(aws ecr get-login-password --region "$REGION" 2>/dev/null | \
     docker login --username AWS --password-stdin "$ECR_REGISTRY" 2>&1 || true)
   if echo "$ECR_LOGIN" | grep -q "Login Succeeded"; then
     pass "ECR login succeeded"
@@ -82,7 +84,7 @@ if [ -n "$AWS_ACCOUNT_ID" ]; then
 
   # Create ECR repository (conditional)
   ECR_CREATE=$(aws ecr create-repository --repository-name "$ECR_REPO" \
-    --region us-east-2 2>&1 || true)
+    --region "$REGION" 2>&1 || true)
   if echo "$ECR_CREATE" | grep -q "repositoryUri\|RepositoryAlreadyExistsException"; then
     pass "ECR repository $ECR_REPO created or already exists"
   else
@@ -104,7 +106,7 @@ if [ -n "$AWS_ACCOUNT_ID" ]; then
 
   # Clean up ECR repo immediately (test only)
   aws ecr delete-repository --repository-name cicd-lab-app-$STUDENT_NAME \
-    --region us-east-2 --force &>/dev/null 2>&1 || true
+    --region "$REGION" --force &>/dev/null 2>&1 || true
 else
   skip "AWS account not accessible"
   export ECR_REGISTRY="placeholder"
@@ -154,16 +156,97 @@ UPDATED_ANNOTATION=$(kubectl get deployment cicd-demo -n "$NS_CICD" \
   -o jsonpath='{.metadata.annotations.git-commit}' 2>/dev/null)
 assert_eq "annotation updated after code change" "v2-sha" "$UPDATED_ANNOTATION"
 
-# ─── Step 5-6: ArgoCD ───────────────────────────────────────────────────────
+# ─── Step 3-6: ArgoCD GitOps demo (matches README) ──────────────────────────
+# The README's ArgoCD walkthrough deploys an http-echo "Hello from ArgoCD v1"
+# demo app (Steps 3+5), updates it to v2 then rolls back (Step 6), and creates
+# the declarative Application from argocd-app.yaml (Step 4). The demo-app part is
+# plain kubectl and runs whenever a cluster is reachable; the Application sync
+# checks need the ArgoCD control plane and degrade to skip when it is absent.
 
 echo ""
-echo "Step 5-6 — ArgoCD:"
+echo "Step 3-6 — ArgoCD:"
+
+kubectl create namespace "$NS_ARGOCD" &>/dev/null
+
+# Steps 3 + 5: deploy the README's local demo-app manifests (http-echo v1)
+cat <<'EOF' | kubectl apply -n "$NS_ARGOCD" -f - &>/dev/null
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  labels: { app: demo-app }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: demo-app }
+  template:
+    metadata:
+      labels: { app: demo-app }
+    spec:
+      containers:
+      - name: app
+        image: hashicorp/http-echo
+        args: ["-text=Hello from ArgoCD v1", "-listen=:8080"]
+        ports:
+        - containerPort: 8080
+        resources:
+          requests: { cpu: 50m, memory: 32Mi }
+          limits: { cpu: 100m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app-svc
+spec:
+  selector: { app: demo-app }
+  ports:
+  - port: 80
+    targetPort: 8080
+EOF
+
+if wait_for_deploy "$NS_ARGOCD" demo-app 90; then
+  # Step 5: app responds with the v1 text
+  V1_RESPONSE=$(kubectl run argocd-curl-v1 --image=curlimages/curl --rm -i --restart=Never \
+    -n "$NS_ARGOCD" --timeout=30s -- curl -s demo-app-svc 2>/dev/null)
+  if [ -n "$V1_RESPONSE" ]; then
+    assert_contains "demo-app responds 'Hello from ArgoCD v1'" "$V1_RESPONSE" "Hello from ArgoCD v1"
+  else
+    skip "demo-app v1 curl returned empty (cluster networking unavailable)"
+  fi
+
+  # Step 6: update the echoed text to v2, confirm it, then roll back to v1
+  kubectl patch deployment demo-app -n "$NS_ARGOCD" --type=json \
+    -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args","value":["-text=Hello from ArgoCD v2","-listen=:8080"]}]' &>/dev/null
+  wait_for_deploy "$NS_ARGOCD" demo-app 90
+  V2_RESPONSE=$(kubectl run argocd-curl-v2 --image=curlimages/curl --rm -i --restart=Never \
+    -n "$NS_ARGOCD" --timeout=30s -- curl -s demo-app-svc 2>/dev/null)
+  if [ -n "$V2_RESPONSE" ]; then
+    assert_contains "demo-app responds 'Hello from ArgoCD v2' after update" "$V2_RESPONSE" "Hello from ArgoCD v2"
+  else
+    skip "demo-app v2 curl returned empty"
+  fi
+
+  kubectl rollout undo deployment/demo-app -n "$NS_ARGOCD" &>/dev/null
+  wait_for_deploy "$NS_ARGOCD" demo-app 90
+  RB_RESPONSE=$(kubectl run argocd-curl-rb --image=curlimages/curl --rm -i --restart=Never \
+    -n "$NS_ARGOCD" --timeout=30s -- curl -s demo-app-svc 2>/dev/null)
+  if [ -n "$RB_RESPONSE" ]; then
+    assert_contains "demo-app rolled back to 'Hello from ArgoCD v1'" "$RB_RESPONSE" "Hello from ArgoCD v1"
+  else
+    skip "demo-app rollback curl returned empty"
+  fi
+else
+  skip "demo-app deployment did not become ready (cluster unavailable)"
+fi
+
+# Step 4: declarative ArgoCD Application (argocd-app.yaml). Needs the ArgoCD
+# control plane, so gate behind the argocd namespace running.
 ARGOCD_RUNNING=false
 if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
   ARGOCD_RUNNING=true
   pass "argocd pods running"
 
-  # Verify CLI
+  # Verify CLI (optional)
   if command -v argocd &>/dev/null; then
     assert_cmd "argocd CLI works" argocd version --client
   else
@@ -180,10 +263,14 @@ if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
   APP_EXISTS=$(kubectl get application "demo-$STUDENT_NAME" -n argocd --no-headers 2>/dev/null | wc -l | tr -d ' ')
   assert_eq "ArgoCD Application created" "1" "$APP_EXISTS"
 
-  # Verify Application spec fields
+  # Verify Application spec fields match argocd-app.yaml / the README
   APP_DEST_NS=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
     -o jsonpath='{.spec.destination.namespace}' 2>/dev/null)
   assert_eq "ArgoCD app targets correct namespace" "$NS_ARGOCD" "$APP_DEST_NS"
+
+  APP_REPO=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
+    -o jsonpath='{.spec.source.repoURL}' 2>/dev/null)
+  assert_contains "ArgoCD app sources the example-apps repo" "$APP_REPO" "argocd-example-apps"
 
   APP_SYNC_POLICY=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
     -o jsonpath='{.spec.syncPolicy.automated.selfHeal}' 2>/dev/null)
@@ -193,43 +280,30 @@ if kubectl get pods -n argocd --no-headers 2>/dev/null | grep -q Running; then
     -o jsonpath='{.spec.syncPolicy.automated.prune}' 2>/dev/null)
   assert_eq "ArgoCD app has prune enabled" "true" "$APP_PRUNE"
 
-  # ArgoCD sync (conditional -- will likely fail due to dummy repo URL)
-  if command -v argocd &>/dev/null; then
-    SYNC_RESULT=$(argocd app sync "demo-$STUDENT_NAME" 2>&1 || true)
-    if echo "$SYNC_RESULT" | grep -qi "healthy\|synced\|succeeded"; then
-      pass "argocd app sync succeeded"
-    else
-      skip "argocd app sync expected to fail (dummy repo URL)"
+  # README Step 4 checkpoint: the app converges to Synced + Healthy against the
+  # public argocd-example-apps repo. Repo egress may be blocked in some clusters,
+  # so degrade to skip (not fail) if it doesn't converge within the window.
+  SYNC_STATUS=""
+  HEALTH_STATUS=""
+  for i in $(seq 1 24); do
+    SYNC_STATUS=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
+      -o jsonpath='{.status.sync.status}' 2>/dev/null)
+    HEALTH_STATUS=$(kubectl get application "demo-$STUDENT_NAME" -n argocd \
+      -o jsonpath='{.status.health.status}' 2>/dev/null)
+    if [ "$SYNC_STATUS" = "Synced" ] && [ "$HEALTH_STATUS" = "Healthy" ]; then
+      break
     fi
-
-    HEALTH_RESULT=$(argocd app wait "demo-$STUDENT_NAME" --health --timeout 10 2>&1 || true)
-    if echo "$HEALTH_RESULT" | grep -qi "healthy"; then
-      pass "argocd app health check passed"
-    else
-      skip "argocd app health check skipped (dummy repo)"
-    fi
+    sleep 5
+  done
+  if [ "$SYNC_STATUS" = "Synced" ]; then
+    pass "ArgoCD Application reached Synced"
+  else
+    skip "ArgoCD Application not Synced (status: ${SYNC_STATUS:-unknown}; repo may be unreachable)"
   fi
-
-  # ArgoCD app history and rollback
-  if command -v argocd &>/dev/null; then
-    HISTORY_RESULT=$(argocd app history "demo-$STUDENT_NAME" 2>&1 || true)
-    if echo "$HISTORY_RESULT" | grep -qi "ID\|revision\|cicd-demo"; then
-      pass "argocd app history returned results"
-    else
-      skip "argocd app history returned no results (expected with dummy repo)"
-    fi
-
-    # Attempt rollback if sync was performed
-    if echo "$SYNC_RESULT" | grep -qi "healthy\|synced\|succeeded"; then
-      ROLLBACK_RESULT=$(argocd app rollback "demo-$STUDENT_NAME" 1 2>&1 || true)
-      if echo "$ROLLBACK_RESULT" | grep -qi "rollback\|healthy\|synced\|succeeded"; then
-        pass "argocd app rollback succeeded"
-      else
-        skip "argocd app rollback did not succeed (expected with dummy repo)"
-      fi
-    else
-      skip "argocd rollback skipped (sync was not successful)"
-    fi
+  if [ "$HEALTH_STATUS" = "Healthy" ]; then
+    pass "ArgoCD Application reached Healthy"
+  else
+    skip "ArgoCD Application not Healthy (status: ${HEALTH_STATUS:-unknown})"
   fi
 
   # Clean up ArgoCD application

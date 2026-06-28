@@ -20,10 +20,17 @@ echo ""
 
 kubectl create namespace "$NS" &>/dev/null
 
-apply() { envsubst '$STUDENT_NAME' < "$LAB_DIR/$1" | kubectl apply -f - &>/dev/null; }
+apply() { envsubst '$STUDENT_NAME $ZONE' < "$LAB_DIR/$1" | kubectl apply -f - &>/dev/null; }
 
 NODE_COUNT=$(kubectl get nodes --no-headers 2>/dev/null | grep -c Ready || echo 0)
 echo "Cluster has $NODE_COUNT Ready node(s)"
+
+# Real zone from the cluster — the affinity manifests reference $ZONE.
+# Fall back to a placeholder so apply() still produces valid YAML on a
+# zoneless (local) cluster; the required-affinity pod simply stays Pending.
+export ZONE=$(kubectl get nodes -o jsonpath='{.items[0].metadata.labels.topology\.kubernetes\.io/zone}' 2>/dev/null)
+[ -z "$ZONE" ] && ZONE="zone-unknown"
+echo "Using zone: $ZONE"
 
 # ─── Step 1: Node labels ────────────────────────────────────────────────
 
@@ -130,6 +137,44 @@ TKEY=$(kubectl get deployment zone-spread -n "$NS" \
   -o jsonpath='{.spec.template.spec.topologySpreadConstraints[0].topologyKey}' 2>/dev/null)
 assert_eq "zone-spread spreads on the zone topology key" "topology.kubernetes.io/zone" "$TKEY"
 
+# Topology spread OUTCOME: on a multi-zone cluster, pods should be balanced
+# across zones with a max-skew of 1. Skip on clusters with <2 zones.
+ZONE_COUNT=$(kubectl get nodes -o jsonpath='{.items[*].metadata.labels.topology\.kubernetes\.io/zone}' 2>/dev/null | tr ' ' '\n' | sort -u | grep -c . || echo 0)
+if [ "${ZONE_COUNT:-0}" -ge 2 ]; then
+  if wait_for_deploy "$NS" zone-spread 90; then
+    # Map each running pod's node to that node's zone, tally per-zone counts.
+    POD_NODES=$(kubectl get pods -n "$NS" -l app=zone-spread \
+      -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' 2>/dev/null | grep -v '^$' || true)
+    declare -A ZONE_TALLY=()
+    for n in $POD_NODES; do
+      z=$(kubectl get node "$n" -o jsonpath='{.metadata.labels.topology\.kubernetes\.io/zone}' 2>/dev/null)
+      [ -z "$z" ] && z="unknown"
+      ZONE_TALLY["$z"]=$(( ${ZONE_TALLY["$z"]:-0} + 1 ))
+    done
+    if [ "${#ZONE_TALLY[@]}" -gt 0 ]; then
+      MIN=-1; MAX=0
+      for z in "${!ZONE_TALLY[@]}"; do
+        c=${ZONE_TALLY[$z]}
+        [ "$c" -gt "$MAX" ] && MAX=$c
+        { [ "$MIN" -lt 0 ] || [ "$c" -lt "$MIN" ]; } && MIN=$c
+      done
+      SKEW_ACTUAL=$(( MAX - MIN ))
+      if [ "$SKEW_ACTUAL" -le 1 ]; then
+        pass "zone-spread pods balanced across zones (max-skew $SKEW_ACTUAL ≤ 1)"
+      else
+        fail "zone-spread pods unbalanced (max-skew $SKEW_ACTUAL > 1)"
+      fi
+    else
+      skip "zone-spread pods not scheduled to any node yet"
+    fi
+    unset ZONE_TALLY
+  else
+    skip "zone-spread deployment not Ready — skipping skew check"
+  fi
+else
+  skip "topology spread skew check needs 2+ zones (have ${ZONE_COUNT:-0})"
+fi
+
 # ─── Step 8: DaemonSets (observe) ────────────────────────────────────────
 
 echo ""
@@ -139,6 +184,14 @@ if [ "${DS:-0}" -gt 0 ]; then
   pass "kube-system runs $DS DaemonSet(s) — one Pod per node"
 else
   skip "no DaemonSets in kube-system on this cluster"
+fi
+
+# aws-node (the EKS VPC CNI DaemonSet) should schedule exactly one Pod per node.
+if kubectl get daemonset aws-node -n kube-system &>/dev/null; then
+  DESIRED=$(kubectl get daemonset aws-node -n kube-system -o jsonpath='{.status.desiredNumberScheduled}' 2>/dev/null)
+  assert_eq "aws-node DaemonSet desires one Pod per node" "$NODE_COUNT" "$DESIRED"
+else
+  skip "aws-node DaemonSet absent (non-EKS cluster)"
 fi
 
 # ─── Cleanup ─────────────────────────────────────────────────────────────

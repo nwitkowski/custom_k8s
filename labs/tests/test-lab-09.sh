@@ -250,6 +250,49 @@ else
   skip "PromQL buggy-app OOMKilled query (prometheus unavailable)"
 fi
 
+# ─── Step 4: Monitoring stack components (Services + Alertmanager) ─────────
+
+echo ""
+echo "Monitoring Stack Components:"
+if kubectl get namespace monitoring &>/dev/null && \
+   kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus --no-headers 2>/dev/null | grep -q .; then
+  # kube-prometheus-stack does NOT put app.kubernetes.io/name on its Services,
+  # so match by name instead (release-name tolerant). The operator always
+  # creates the headless `prometheus-operated` / `alertmanager-operated`
+  # Services regardless of release name, with the chart's named Services too.
+  SVCS=$(kubectl get svc -n monitoring -o name 2>/dev/null)
+
+  if echo "$SVCS" | grep -qiE 'prometheus-operated|kube-prometheus-prometheus'; then
+    pass "Prometheus Service exists in monitoring namespace"
+  else
+    fail "Prometheus Service not found in monitoring namespace"
+  fi
+
+  if echo "$SVCS" | grep -qiE 'alertmanager-operated|kube-prometheus-alertmanager'; then
+    pass "Alertmanager Service exists in monitoring namespace"
+  else
+    fail "Alertmanager Service not found in monitoring namespace"
+  fi
+
+  if echo "$SVCS" | grep -qiE 'grafana'; then
+    pass "Grafana Service exists in monitoring namespace"
+  else
+    fail "Grafana Service not found in monitoring namespace"
+  fi
+
+  # An Alertmanager pod should be Running.
+  if kubectl get pods -n monitoring -l app.kubernetes.io/name=alertmanager --no-headers 2>/dev/null | grep -q Running; then
+    pass "Alertmanager pod is Running"
+  else
+    skip "Alertmanager pod not Running yet"
+  fi
+else
+  skip "monitoring stack not installed — Prometheus Service check"
+  skip "monitoring stack not installed — Alertmanager Service check"
+  skip "monitoring stack not installed — Grafana Service check"
+  skip "monitoring stack not installed — Alertmanager pod check"
+fi
+
 # ─── Step 4-5: Prometheus ─────────────────────────────────────────────────
 
 echo ""

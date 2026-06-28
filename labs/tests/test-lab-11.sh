@@ -225,21 +225,59 @@ else
   fail "PDB shows only $PDB_STATUS healthy pods (expected >= 2)"
 fi
 
-# Dry-run drain verification
-NODE_NAME=$(kubectl get pods -n "$NS" -l app=webapp \
-  -o jsonpath='{.items[0].spec.nodeName}' 2>/dev/null)
-if [ -n "$NODE_NAME" ]; then
-  DRAIN_OUTPUT=$(kubectl drain "$NODE_NAME" --ignore-daemonsets \
-    --delete-emptydir-data --dry-run=client 2>&1)
-  if echo "$DRAIN_OUTPUT" | grep -q "drained\|evict"; then
-    pass "dry-run drain executed on node $NODE_NAME"
-  else
-    # dry-run=client always succeeds with some output
-    pass "dry-run drain completed on node $NODE_NAME"
-  fi
+# ─── PDB enforcement: disruptionsAllowed + eviction is actually blocked ─────
+# The webapp Deployment runs 2 replicas and the PDB requires minAvailable=2, so
+# the budget permits 0 voluntary disruptions. Verify the reported budget status,
+# then PROVE enforcement by asking the eviction API (and a server-side dry-run
+# drain) to evict a pod and confirming the PDB refuses it. Everything below is
+# non-destructive (dry-run only) — no real cordon/eviction happens.
+
+DISRUPTIONS=$(kubectl get pdb webapp-pdb -n "$NS" -o jsonpath='{.status.disruptionsAllowed}' 2>/dev/null)
+DESIRED_HEALTHY=$(kubectl get pdb webapp-pdb -n "$NS" -o jsonpath='{.status.desiredHealthy}' 2>/dev/null)
+assert_eq "PDB desiredHealthy is 2" "2" "$DESIRED_HEALTHY"
+
+if [ -n "$DISRUPTIONS" ] && [ -n "$PDB_STATUS" ]; then
+  # disruptionsAllowed = max(0, currentHealthy - minAvailable). With 2 healthy
+  # pods and minAvailable=2 this must be exactly 0.
+  EXPECTED_ALLOWED=$(( PDB_STATUS - 2 ))
+  [ "$EXPECTED_ALLOWED" -lt 0 ] && EXPECTED_ALLOWED=0
+  assert_eq "PDB disruptionsAllowed = currentHealthy($PDB_STATUS) - minAvailable(2)" \
+    "$EXPECTED_ALLOWED" "$DISRUPTIONS"
 else
-  skip "could not determine node for drain test"
+  skip "PDB status (disruptionsAllowed) not populated yet"
 fi
+
+# Eviction enforcement: a dry-run eviction of a webapp pod must be refused while
+# disruptionsAllowed=0 (the apiserver still runs the PDB admission check on a
+# dry-run eviction and returns 429 TooManyRequests if it would violate it).
+WEBAPP_POD=$(kubectl get pods -n "$NS" -l app=webapp \
+  -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ "$DISRUPTIONS" = "0" ] && [ -n "$WEBAPP_POD" ]; then
+  EVICT_BODY=$(mktemp)
+  cat > "$EVICT_BODY" <<EVEOF
+{"apiVersion":"policy/v1","kind":"Eviction","metadata":{"name":"$WEBAPP_POD","namespace":"$NS"},"deleteOptions":{"dryRun":["All"]}}
+EVEOF
+  EVICT_OUT=$(kubectl create --raw "/api/v1/namespaces/$NS/pods/$WEBAPP_POD/eviction" \
+    -f "$EVICT_BODY" 2>&1 || true)
+  rm -f "$EVICT_BODY"
+  if echo "$EVICT_OUT" | grep -qiE "disruption budget|Cannot evict|TooManyRequests|429"; then
+    pass "PDB enforced: dry-run eviction of $WEBAPP_POD refused (disruptionsAllowed=0)"
+  elif echo "$EVICT_OUT" | grep -qi "success"; then
+    fail "eviction allowed despite minAvailable=2 with only $PDB_STATUS healthy pods"
+  else
+    skip "eviction dry-run result inconclusive: $EVICT_OUT"
+  fi
+elif [ -n "$WEBAPP_POD" ]; then
+  skip "disruptionsAllowed=$DISRUPTIONS (budget has headroom; eviction boundary not reached)"
+else
+  skip "could not determine a webapp pod for eviction test"
+fi
+
+# NOTE: a `kubectl drain --dry-run=server` was intentionally NOT used here. When
+# the PDB allows zero disruptions, drain retries eviction until its --timeout and
+# (with the default timeout of 0) hangs indefinitely, stalling the whole suite.
+# The eviction-API dry-run above already proves the PDB blocks voluntary
+# disruptions, so the drain adds hang risk for no extra coverage.
 
 # ─── Step 9: Progress deadline ──────────────────────────────────────────────
 

@@ -43,6 +43,29 @@ DB_TIER=$(kubectl get pod database -n "$NS" -o jsonpath='{.metadata.labels.tier}
 assert_eq "database has tier=database" "database" "$DB_TIER"
 
 ###############################################################################
+# Step 2b: Default connectivity baseline (BEFORE any deny policy)
+###############################################################################
+# Kubernetes allows all pod-to-pod traffic by default. Establish that baseline
+# now, before deny-all is applied. This needs no CNI enforcement (it is the
+# allow-by-default case); it only needs the pods to be Running. If the exec/curl
+# can't establish the connection (e.g. pods not ready), degrade to skip rather
+# than fail.
+
+echo ""
+echo "Step 2b — Default Connectivity Baseline:"
+if [ "$PODS" = "3" ]; then
+  kubectl exec frontend -n "$NS" -- curl -sS --max-time 5 "http://backend.${NS}.svc.cluster.local:80" &>/dev/null
+  if [ $? -eq 0 ]; then pass "frontend -> backend reachable by default (allow-all baseline)"; \
+    else skip "frontend -> backend baseline could not be established — skipping"; fi
+
+  kubectl exec backend -n "$NS" -- curl -sS --max-time 5 "http://database.${NS}.svc.cluster.local:80" &>/dev/null
+  if [ $? -eq 0 ]; then pass "backend -> database reachable by default (allow-all baseline)"; \
+    else skip "backend -> database baseline could not be established — skipping"; fi
+else
+  skip "pods not all Running — skipping default connectivity baseline"
+fi
+
+###############################################################################
 # Step 3: Apply deny-all-ingress
 ###############################################################################
 
@@ -127,6 +150,27 @@ if [ "$CNI_ENFORCES" = "true" ]; then
 fi
 
 ###############################################################################
+# Step 7b: Complete policy set — verify paths that SHOULD be blocked
+###############################################################################
+# With the full allow-set in place (frontend->backend, backend->database), every
+# other ingress path must remain denied by default-deny-all-ingress. Gated on
+# CNI enforcement.
+
+echo ""
+echo "Step 7b — Complete Policy Set (blocked paths):"
+if [ "$CNI_ENFORCES" = "true" ]; then
+  sleep 2
+  kubectl exec frontend -n "$NS" -- curl -sS --max-time 4 "http://database.${NS}.svc.cluster.local:80" &>/dev/null
+  if [ $? -ne 0 ]; then pass "frontend -> database BLOCKED"; else fail "frontend -> database should be blocked"; fi
+
+  kubectl exec database -n "$NS" -- curl -sS --max-time 4 "http://frontend.${NS}.svc.cluster.local:80" &>/dev/null
+  if [ $? -ne 0 ]; then pass "database -> frontend BLOCKED"; else fail "database -> frontend should be blocked"; fi
+
+  kubectl exec database -n "$NS" -- curl -sS --max-time 4 "http://backend.${NS}.svc.cluster.local:80" &>/dev/null
+  if [ $? -ne 0 ]; then pass "database -> backend BLOCKED"; else fail "database -> backend should be blocked"; fi
+fi
+
+###############################################################################
 # Step 8: Egress Policies
 ###############################################################################
 
@@ -141,6 +185,13 @@ assert_eq "deny-all-egress has empty podSelector" "{}" "$EGRESS_SEL"
 EGRESS_TYPE=$(kubectl get networkpolicy default-deny-all-egress -n "$NS" \
   -o jsonpath='{.spec.policyTypes[0]}' 2>/dev/null)
 assert_eq "deny-all-egress has Egress policyType" "Egress" "$EGRESS_TYPE"
+
+# Behavioral: under deny-all-egress an outbound request must fail (CNI-gated)
+if [ "$CNI_ENFORCES" = "true" ]; then
+  sleep 2
+  kubectl exec frontend -n "$NS" -- curl -sS --max-time 4 "http://backend.${NS}.svc.cluster.local:80" &>/dev/null
+  if [ $? -ne 0 ]; then pass "deny-all-egress BLOCKS outbound from frontend"; else fail "deny-all-egress should block outbound from frontend"; fi
+fi
 
 envsubst '$STUDENT_NAME' < "$LAB_DIR/allow-dns-egress.yaml" | kubectl apply -f - &>/dev/null
 
@@ -201,6 +252,17 @@ assert_eq "fixed policy has from:[] (allow all)" "" "$FIXED_FROM"
 FIXED_PORT=$(kubectl get networkpolicy allow-external-to-frontend -n "$NS" \
   -o jsonpath='{.spec.ingress[0].ports[0].port}' 2>/dev/null)
 assert_eq "fixed policy uses port 80" "80" "$FIXED_PORT"
+
+# Behavioral: the fixed policy (from:[] on port 80) restores access to frontend,
+# which the broken policy left blocked. Gated on CNI enforcement. Remove the
+# earlier deny-all-egress (Step 8) first so this ingress check isn't masked by
+# the egress restriction on the client pod.
+if [ "$CNI_ENFORCES" = "true" ]; then
+  kubectl delete networkpolicy default-deny-all-egress allow-dns-egress -n "$NS" --ignore-not-found &>/dev/null
+  sleep 3
+  D2F=$(kubectl exec database -n "$NS" -- curl -sS --max-time 5 "http://frontend.${NS}.svc.cluster.local:80" 2>/dev/null)
+  assert_contains "fixed policy restores access to frontend" "$D2F" "nginx"
+fi
 
 ###############################################################################
 # Step 12: Cleanup

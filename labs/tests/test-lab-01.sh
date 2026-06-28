@@ -20,6 +20,17 @@ assert_cmd "kubectl is available"   kubectl version --client
 assert_cmd "helm is available"      helm version --short
 assert_cmd "jq is available"        jq --version
 
+# Step 3: required CLI tools (envsubst, git, openssl pre-installed; docker optional)
+assert_cmd "envsubst installed"     command -v envsubst
+assert_cmd "git installed"          command -v git
+assert_cmd "openssl installed"      command -v openssl
+
+if command -v docker &>/dev/null; then
+  pass "docker installed"
+else
+  skip "docker not installed"
+fi
+
 if flux --version &>/dev/null; then
   pass "flux CLI is available"
 else
@@ -36,12 +47,21 @@ fi
 
 echo ""
 echo "Cluster Navigation:"
+
+# Step 4: cluster connectivity and active context
+assert_cmd "kubectl cluster-info succeeds" kubectl cluster-info
+CURRENT_CTX=$(kubectl config current-context 2>/dev/null)
+assert_cmd "kubectl config current-context is non-empty" test -n "$CURRENT_CTX"
+
 NODES=$(kubectl get nodes -o wide --no-headers 2>/dev/null)
 assert_contains "nodes listed with wide output" "$NODES" "Ready"
 
 NODE_NAME=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
 NODE_DESC=$(kubectl describe node "$NODE_NAME" 2>/dev/null)
 assert_contains "node describe shows kubelet info" "$NODE_DESC" "Kubelet Version"
+
+# Step 5: describe nodes exposes a Taints: line
+assert_contains "node describe shows Taints line" "$NODE_DESC" "Taints:"
 
 LABELS=$(kubectl get nodes --show-labels --no-headers 2>/dev/null)
 assert_contains "node labels visible" "$LABELS" "kubernetes.io"
@@ -61,6 +81,14 @@ if [ "$ALL_RES" -gt 0 ]; then
   pass "kubectl get all -A returns $ALL_RES resources"
 else
   fail "kubectl get all -A returned nothing"
+fi
+
+# Step 6: api-resources lists the API surface
+API_RES=$(kubectl api-resources --no-headers 2>/dev/null | wc -l | tr -d ' ')
+if [ "$API_RES" -gt 0 ]; then
+  pass "kubectl api-resources returns $API_RES rows"
+else
+  fail "kubectl api-resources returned nothing"
 fi
 
 # ─── Deploy nginx (Step 7) ────────────────────────────────────────────────
@@ -164,4 +192,12 @@ fi
 # ─── Cleanup (Step 12) ──────────────────────────────────────────────────
 
 cleanup_ns "$NS"
+
+# Step 12: confirm the namespace is gone (allow for terminating delay)
+for i in $(seq 1 12); do
+  kubectl get namespace "$NS" &>/dev/null || break
+  sleep 5
+done
+assert_cmd_fails "lab namespace deleted after cleanup" kubectl get namespace "$NS"
+
 summary

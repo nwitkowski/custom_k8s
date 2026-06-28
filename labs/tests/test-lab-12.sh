@@ -148,9 +148,25 @@ awk '/ports:/{print "          envFrom:"; print "          - configMapRef:"; pri
   "$TMPDIR/mychart/templates/deployment.yaml" > "$TMPDIR/mychart/templates/deployment.yaml.tmp" && \
   mv "$TMPDIR/mychart/templates/deployment.yaml.tmp" "$TMPDIR/mychart/templates/deployment.yaml"
 
-pass "ConfigMap template created"
-pass "appConfig values added to values.yaml"
-pass "envFrom added to deployment template"
+# Verify the customizations were actually written to the chart on disk
+assert_cmd "ConfigMap template file created" test -f "$TMPDIR/mychart/templates/configmap.yaml"
+assert_contains "configmap.yaml wires APP_ENV from appConfig" \
+  "$(cat "$TMPDIR/mychart/templates/configmap.yaml")" "APP_ENV"
+assert_contains "values.yaml has appConfig block" \
+  "$(cat "$TMPDIR/mychart/values.yaml")" "appConfig"
+assert_contains "deployment template references envFrom" \
+  "$(cat "$TMPDIR/mychart/templates/deployment.yaml")" "envFrom"
+assert_contains "deployment envFrom references the config ConfigMap" \
+  "$(cat "$TMPDIR/mychart/templates/deployment.yaml")" "configMapRef"
+
+# Verify the chart still lints and that `helm template` renders the wiring
+# end-to-end (matches the README Step 7 verification: lint passes and
+# `helm template r mychart/ | grep -A2 envFrom` shows the block).
+assert_cmd "helm lint passes after customization" helm lint "$TMPDIR/mychart"
+STEP7_TEMPLATE=$(helm template r "$TMPDIR/mychart" 2>/dev/null)
+assert_contains "rendered template includes envFrom wiring" "$STEP7_TEMPLATE" "envFrom"
+assert_contains "rendered template includes configMapRef" "$STEP7_TEMPLATE" "configMapRef"
+assert_contains "rendered template renders the ConfigMap object" "$STEP7_TEMPLATE" "kind: ConfigMap"
 
 # ─── Step 8: Validate and debug ─────────────────────────────────────────────
 

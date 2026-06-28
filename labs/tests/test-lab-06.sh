@@ -55,6 +55,33 @@ else
   exit 0
 fi
 
+# ─── Ingress entrypoint detection ────────────────────────────────────────
+# Behavioral curl checks require the ingress-nginx controller Service to have
+# an external LoadBalancer address. Detect it once and gate every curl-based
+# check below on $ING_REACHABLE so they degrade to skip (never false-fail) on
+# clusters where the LB has no address.
+
+ING_NS="ingress-nginx"
+ING_REACHABLE=false
+ING_ADDR=""
+ING_CTRL_SVC=$(kubectl get svc -n "$ING_NS" \
+  -l app.kubernetes.io/component=controller \
+  -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+if [ -n "$ING_CTRL_SVC" ]; then
+  ING_ADDR=$(kubectl get svc "$ING_CTRL_SVC" -n "$ING_NS" \
+    -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+  [ -z "$ING_ADDR" ] && ING_ADDR=$(kubectl get svc "$ING_CTRL_SVC" -n "$ING_NS" \
+    -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+fi
+
+if [ -n "$ING_ADDR" ]; then
+  ING_REACHABLE=true
+  pass "ingress-nginx controller Service has LoadBalancer address ($ING_ADDR)"
+else
+  skip "ingress-nginx controller has no LoadBalancer address — skipping curl-based routing checks"
+fi
+
 # ─── Step 3: Host-based Ingress ──────────────────────────────────────────
 
 echo ""
@@ -74,6 +101,22 @@ assert_contains "first host contains v1-" "$HOST1" "v1-"
 
 HOST2=$(echo "$ING_RULES" | jq -r '.spec.rules[1].host' 2>/dev/null)
 assert_contains "second host contains v2-" "$HOST2" "v2-"
+
+# Behavioral: host-based routing (gated on ingress reachability)
+if [ "$ING_REACHABLE" = "true" ]; then
+  sleep 5  # allow the controller to program the new host rules
+  H_V1=$(curl -s --max-time 10 -H "Host: v1-$STUDENT_NAME.lab.local" "http://$ING_ADDR/" 2>/dev/null)
+  assert_contains "host v1 routes to App V1" "$H_V1" "Hello from App V1"
+
+  H_V2=$(curl -s --max-time 10 -H "Host: v2-$STUDENT_NAME.lab.local" "http://$ING_ADDR/" 2>/dev/null)
+  assert_contains "host v2 routes to App V2" "$H_V2" "Hello from App V2"
+
+  H_UNK=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+    -H "Host: unknown-$STUDENT_NAME.lab.local" "http://$ING_ADDR/" 2>/dev/null)
+  assert_eq "unknown host returns 404" "404" "$H_UNK"
+else
+  skip "ingress not reachable — skipping host-based routing curl checks"
+fi
 
 # ─── Step 4: Path-based Ingress ──────────────────────────────────────────
 
@@ -96,6 +139,21 @@ assert_eq "path ingress has /v2 path" "/v2" "$PATH_V2"
 PATH_DEFAULT=$(kubectl get ingress app-ingress-path -n "$NS" \
   -o jsonpath='{.spec.rules[0].http.paths[2].path}' 2>/dev/null)
 assert_eq "path ingress has / default path" "/" "$PATH_DEFAULT"
+
+# Behavioral: path-based routing (gated on ingress reachability)
+if [ "$ING_REACHABLE" = "true" ]; then
+  sleep 5  # allow the controller to program the new path rules
+  P_V1=$(curl -s --max-time 10 -H "Host: app-$STUDENT_NAME.lab.local" "http://$ING_ADDR/v1" 2>/dev/null)
+  assert_contains "path /v1 routes to App V1" "$P_V1" "Hello from App V1"
+
+  P_V2=$(curl -s --max-time 10 -H "Host: app-$STUDENT_NAME.lab.local" "http://$ING_ADDR/v2" 2>/dev/null)
+  assert_contains "path /v2 routes to App V2" "$P_V2" "Hello from App V2"
+
+  P_DEF=$(curl -s --max-time 10 -H "Host: app-$STUDENT_NAME.lab.local" "http://$ING_ADDR/" 2>/dev/null)
+  assert_contains "path / defaults to App V1" "$P_DEF" "Hello from App V1"
+else
+  skip "ingress not reachable — skipping path-based routing curl checks"
+fi
 
 # ─── Step 5: TLS Ingress ────────────────────────────────────────────────
 
@@ -124,6 +182,19 @@ SSL_REDIR=$(kubectl get ingress app-ingress-tls -n "$NS" \
   -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io/ssl-redirect}' 2>/dev/null)
 assert_eq "TLS ingress has ssl-redirect=true" "true" "$SSL_REDIR"
 
+# Behavioral: TLS termination + HTTP->HTTPS redirect (gated on ingress reachability)
+if [ "$ING_REACHABLE" = "true" ]; then
+  sleep 5  # allow the controller to load the TLS secret and program the rule
+  T_BODY=$(curl -sk --max-time 10 -H "Host: secure-$STUDENT_NAME.lab.local" "https://$ING_ADDR/" 2>/dev/null)
+  assert_contains "HTTPS serves App V1 over TLS" "$T_BODY" "Hello from App V1"
+
+  T_REDIR=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 10 \
+    -H "Host: secure-$STUDENT_NAME.lab.local" "http://$ING_ADDR/" 2>/dev/null)
+  assert_eq "HTTP redirects to HTTPS (308)" "308" "$T_REDIR"
+else
+  skip "ingress not reachable — skipping TLS curl checks"
+fi
+
 rm -f /tmp/tls-ingress-$$.key /tmp/tls-ingress-$$.crt
 
 # ─── Step 6: Ingress Annotations ────────────────────────────────────────
@@ -151,6 +222,33 @@ assert_eq "CORS enabled annotation = true" "true" "$ANN_CORS"
 ANN_ORIGIN=$(kubectl get ingress app-ingress-advanced -n "$NS" \
   -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io/cors-allow-origin}' 2>/dev/null)
 assert_eq "CORS origin = https://app.example.com" "https://app.example.com" "$ANN_ORIGIN"
+
+# Behavioral: CORS header + rate limiting (gated on ingress reachability)
+if [ "$ING_REACHABLE" = "true" ]; then
+  sleep 5  # allow the controller to program the annotated rule
+  # Lowercase the response headers so the case-sensitive grep in assert_contains
+  # matches regardless of how the controller cases the header.
+  CORS_HDRS=$(curl -s -o /dev/null -D - --max-time 10 \
+    -H "Host: api-$STUDENT_NAME.lab.local" \
+    -H "Origin: https://app.example.com" \
+    "http://$ING_ADDR/api/" 2>/dev/null | tr 'A-Z' 'a-z')
+  assert_contains "CORS access-control-allow header present" "$CORS_HDRS" "access-control-allow"
+
+  # limit-rps=10 — a short burst should produce at least one 503/429.
+  RL_HIT=""
+  for i in $(seq 1 30); do
+    code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+      -H "Host: api-$STUDENT_NAME.lab.local" "http://$ING_ADDR/api/" 2>/dev/null)
+    case "$code" in 503|429) RL_HIT="$code"; break;; esac
+  done
+  if [ -n "$RL_HIT" ]; then
+    pass "rate limit returns $RL_HIT under burst"
+  else
+    skip "no 503/429 observed under burst — rate limit may not trip on this controller"
+  fi
+else
+  skip "ingress not reachable — skipping CORS/rate-limit curl checks"
+fi
 
 # ─── Step 7: Gateway API (conditional) ─────────────────────────────────
 

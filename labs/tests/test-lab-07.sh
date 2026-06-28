@@ -201,17 +201,27 @@ kubectl label namespace "$NS_RESTRICTED" \
   pod-security.kubernetes.io/audit=restricted \
   pod-security.kubernetes.io/audit-version=latest &>/dev/null
 
-# Verify namespace labels
-NS_LABELS=$(kubectl get namespace "$NS_RESTRICTED" -o json 2>/dev/null)
-assert_contains "restricted enforce label set" "$NS_LABELS" "pod-security.kubernetes.io/enforce"
+# Verify namespace labels (README sets enforce + warn + audit to restricted)
+ENFORCE_LABEL=$(kubectl get namespace "$NS_RESTRICTED" \
+  -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null)
+assert_eq "restricted enforce label set" "restricted" "$ENFORCE_LABEL"
 
-# Privileged pod should be rejected
+WARN_LABEL=$(kubectl get namespace "$NS_RESTRICTED" \
+  -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/warn}' 2>/dev/null)
+assert_eq "restricted warn label set" "restricted" "$WARN_LABEL"
+
+AUDIT_LABEL=$(kubectl get namespace "$NS_RESTRICTED" \
+  -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/audit}' 2>/dev/null)
+assert_eq "restricted audit label set" "restricted" "$AUDIT_LABEL"
+
+# Privileged pod should be rejected. Match PSS ("forbidden") as well as
+# Kyverno/other admission-controller denials so the check is controller-agnostic.
 PRIV_RESULT=$(envsubst '$STUDENT_NAME' < "$LAB_DIR/privileged-pod.yaml" | kubectl apply -f - 2>&1)
-assert_contains "privileged pod rejected" "$PRIV_RESULT" "forbidden"
+assert_contains "privileged pod rejected" "$PRIV_RESULT" "forbidden\|denied\|not allowed\|violat"
 
 # Root pod should be rejected
 ROOT_RESULT=$(envsubst '$STUDENT_NAME' < "$LAB_DIR/root-pod.yaml" | kubectl apply -f - 2>&1)
-assert_contains "root pod rejected" "$ROOT_RESULT" "forbidden"
+assert_contains "root pod rejected" "$ROOT_RESULT" "forbidden\|denied\|not allowed\|violat"
 
 ###############################################################################
 # Step 8: Deploy Compliant Secure Pod

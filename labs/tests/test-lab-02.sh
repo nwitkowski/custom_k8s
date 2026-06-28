@@ -116,6 +116,19 @@ sleep 5
 LG_STATUS=$(kubectl get pod load-generator -n "$NS" -o jsonpath='{.status.phase}' 2>/dev/null)
 assert_eq "load-generator pod is Running" "Running" "$LG_STATUS"
 
+# Step 4: verify the load generator is actually hitting php-apache (logs show "OK!")
+if [ "$LG_STATUS" = "Running" ]; then
+  sleep 5
+  LG_LOGS=$(kubectl logs load-generator -n "$NS" 2>/dev/null || true)
+  if echo "$LG_LOGS" | grep -q "OK!"; then
+    pass "load-generator logs contain hits to php-apache (OK!)"
+  else
+    skip "load-generator logs do not yet show OK! (may need more time)"
+  fi
+else
+  skip "load-generator not running — skipping log check"
+fi
+
 # Give HPA time to observe increased CPU (check up to 90 seconds)
 echo "  ... waiting for HPA to observe load (up to 90s)"
 HPA_TRIGGERED=false
@@ -147,7 +160,7 @@ fi
 
 # Step 6: Stop load
 kubectl delete pod load-generator -n "$NS" --grace-period=0 --force &>/dev/null 2>&1
-assert_cmd "load-generator pod deleted" kubectl get pod -n "$NS" 2>/dev/null
+assert_cmd_fails "load-generator pod is gone after stopping load" kubectl get pod load-generator -n "$NS"
 
 # ─── Step 7: HPA v2 ─────────────────────────────────────────────────────
 
@@ -257,4 +270,5 @@ fi
 # ─── Cleanup ─────────────────────────────────────────────────────────────
 
 cleanup_ns "$NS"
+assert_cmd_fails "namespace removed after teardown" kubectl get namespace "$NS"
 summary

@@ -33,3 +33,6 @@
 
 # E2E run logs
 logs/
+
+# overflow-checker scratch output
+presentations/.overflow-report.json

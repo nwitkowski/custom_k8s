@@ -3,7 +3,7 @@
 # Pick a region with 3+ AZs for the scheduling labs.
 aws_region           = "us-east-2"
 cluster_name         = "platform-lab"
-cluster_version      = "1.33"
+cluster_version      = "1.34"
 vpc_cidr             = "10.0.0.0/16"
 node_instance_type   = "m5.2xlarge"
 node_desired         = 6

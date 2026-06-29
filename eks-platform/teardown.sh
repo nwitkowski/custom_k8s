@@ -52,6 +52,14 @@ if [ -n "$VPC" ] && [ "$VPC" != "None" ]; then
   [ -n "$EPS" ] && aws ec2 delete-vpc-endpoints --region "$REGION" --vpc-endpoint-ids $EPS &>/dev/null || true
   echo "    waiting 30s for ENIs to release..."
   sleep 30
+  # Orphaned VPC-CNI secondary ENIs (aws-K8S-i-*) left in 'available' state after
+  # the nodes terminate block subnet/VPC deletion — delete any detached ENIs.
+  for eni in $(aws ec2 describe-network-interfaces --region "$REGION" \
+      --filters "Name=vpc-id,Values=$VPC" "Name=status,Values=available" \
+      --query 'NetworkInterfaces[].NetworkInterfaceId' --output text 2>/dev/null); do
+    echo "    deleting orphaned ENI $eni"
+    aws ec2 delete-network-interface --region "$REGION" --network-interface-id "$eni" &>/dev/null || true
+  done
   # Orphaned k8s-elb-* security groups (left behind when a classic LB is deleted
   # abruptly) also block VPC deletion — remove them once their ENIs are gone.
   for sg in $(aws ec2 describe-security-groups --region "$REGION" \

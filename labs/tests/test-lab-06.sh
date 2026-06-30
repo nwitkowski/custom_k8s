@@ -281,7 +281,9 @@ if kubectl get crd gatewayclasses.gateway.networking.k8s.io &>/dev/null; then
   GW_ADDR=$(kubectl get gateway lab-gateway -n "$NS" -o jsonpath='{.status.addresses[0].value}' 2>/dev/null)
   GW_REACHABLE=false
   if [ -n "$GW_ADDR" ]; then
-    for _i in $(seq 1 12); do
+    # A fresh ELB needs target registration + health checks before it serves,
+    # which can run past the Programmed condition — poll up to ~2.5 min.
+    for _i in $(seq 1 18); do
       code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
         -H "Host: app-$STUDENT_NAME.lab.local" "http://$GW_ADDR/" 2>/dev/null)
       [ "$code" = "200" ] && { GW_REACHABLE=true; break; }
@@ -308,10 +310,10 @@ else
   skip "Gateway API CRD not installed — skipping Gateway tests"
 fi
 
-# ─── Step 8: Egress NetworkPolicy ──────────────────────────────────────
+# ─── Step 9: Egress NetworkPolicy ──────────────────────────────────────
 
 echo ""
-echo "Step 8: Egress NetworkPolicy"
+echo "Step 9: Egress NetworkPolicy"
 
 envsubst '$STUDENT_NAME' < "$LAB_DIR/egress-policy.yaml" | kubectl apply -f - &>/dev/null
 sleep 2
@@ -329,6 +331,31 @@ assert_eq "egress policy has Egress policyType" "Egress" "$EGRESS_TYPE"
 DNS_PORT=$(kubectl get networkpolicy restrict-egress -n "$NS" \
   -o jsonpath='{.spec.egress[0].ports[0].port}' 2>/dev/null)
 assert_eq "egress allows DNS on port 53" "53" "$DNS_PORT"
+
+# Behavioral: a pod the policy selects (run=egress-test) can reach an
+# in-namespace service on :80 (allowed) but NOT external egress (blocked).
+# Requires a CNI that enforces egress NetworkPolicies (Calico) — skip otherwise.
+if kubectl get pods -n calico-system -l k8s-app=calico-node --no-headers 2>/dev/null | grep -q Running; then
+  kubectl run egress-test --image=curlimages/curl --labels="run=egress-test" \
+    -n "$NS" --restart=Never --command -- sleep 3600 &>/dev/null
+  if wait_for_pod "$NS" egress-test 60; then
+    # BLOCKED: with an Egress policy in place, external egress (not DNS, not
+    # in-namespace) must time out. This is the policy's core guarantee and is
+    # deterministic — the deny applies immediately. (The "allowed" paths depend
+    # on CNI policy-vs-service-NAT ordering and aren't asserted here.)
+    if kubectl exec egress-test -n "$NS" -- curl -s --max-time 6 https://1.1.1.1/ &>/dev/null; then
+      fail "external egress should be blocked by restrict-egress policy"
+    else
+      pass "external egress blocked by restrict-egress policy"
+    fi
+  else
+    skip "egress-test pod not ready — external-block check"
+  fi
+  kubectl delete pod egress-test -n "$NS" --ignore-not-found &>/dev/null
+else
+  skip "CNI does not enforce NetworkPolicies — egress in-namespace allow check"
+  skip "CNI does not enforce NetworkPolicies — egress external block check"
+fi
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────
 

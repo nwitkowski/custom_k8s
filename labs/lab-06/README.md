@@ -260,6 +260,31 @@ kubectl describe networkpolicy restrict-egress -n lab06-$STUDENT_NAME
 
 > ✅ **Checkpoint:** The policy selects pods with `run=egress-test`, allows DNS (port 53) and in-namespace HTTP (port 80) egress only.
 
+#### Test the policy
+
+Deploy a pod the policy applies to (label `run=egress-test`) and confirm the **deny** — external egress is cut off the moment the policy exists:
+
+```bash
+kubectl run egress-test --image=curlimages/curl --labels="run=egress-test" \
+  -n lab06-$STUDENT_NAME --restart=Never --command -- sleep 3600
+kubectl wait --for=condition=Ready pod/egress-test -n lab06-$STUDENT_NAME --timeout=60s
+
+# BLOCKED — external egress (neither DNS nor in-namespace): hangs, then fails
+kubectl exec egress-test -n lab06-$STUDENT_NAME -- curl -s --max-time 5 https://1.1.1.1/ \
+  && echo "reached (unexpected)" || echo ">>> external egress blocked (as expected)"
+
+# ALLOWED paths the policy permits — DNS to kube-dns, and in-namespace HTTP
+kubectl exec egress-test -n lab06-$STUDENT_NAME -- nslookup kubernetes.default
+```
+
+> ✅ **Checkpoint:** The external request **times out** — once an Egress policy exists, only the explicitly-allowed destinations are reachable, everything else is denied. (Requires a CNI that enforces NetworkPolicies, e.g. Calico.)
+
+> **Real-world note:** the policy *allows* DNS and in-namespace HTTP, but whether those allow rules take effect — and whether **ClusterIP Service** traffic is matched at all — depends on how your CNI orders NetworkPolicy vs. kube-proxy's service NAT. On EKS with the VPC CNI + Calico this can be inconsistent, so the **deterministic** takeaway is: **external egress is denied**.
+
+```bash
+kubectl delete pod egress-test -n lab06-$STUDENT_NAME
+```
+
 ---
 
 ## Step 10: Clean Up

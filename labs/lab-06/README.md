@@ -220,6 +220,29 @@ kubectl get httproute app-route -n lab06-$STUDENT_NAME -o yaml
 
 > ✅ **Checkpoint:** The HTTPRoute sends 80% of traffic to app-v1-svc and 20% to app-v2-svc.
 
+#### Access the Gateway
+
+Unlike Ingress (which shares the **ingress-nginx** controller's load balancer), **each Gateway gets its own load balancer** — provisioned by Envoy Gateway when the Gateway is created. So you reach your apps through *your* Gateway's LB, not the ingress controller. Get its address (the load balancer takes ~1–2 minutes to become ready):
+
+```bash
+# Wait for the Gateway to be Programmed, then read its load balancer address
+kubectl wait --for=condition=Programmed gateway/lab-gateway -n lab06-$STUDENT_NAME --timeout=180s
+GW=$(kubectl get gateway lab-gateway -n lab06-$STUDENT_NAME -o jsonpath='{.status.addresses[0].value}')
+echo "Gateway LB: $GW"
+```
+
+The HTTPRoute only matches the hostname `app-$STUDENT_NAME.lab.local` (a fake name, not real DNS), so send it via the `Host` header:
+
+```bash
+# A plain request matches no hostname -> 404 from the Gateway
+curl -s -o /dev/null -w "no Host header: HTTP %{http_code}\n" http://$GW/
+
+# With the matching Host header you reach the apps -> watch the 80/20 split
+for i in $(seq 1 10); do curl -s -H "Host: app-$STUDENT_NAME.lab.local" http://$GW/; echo; done
+```
+
+> ✅ **Checkpoint:** Without the `Host` header you get **404** (no matching route). With `Host: app-$STUDENT_NAME.lab.local`, ~8 of 10 requests return **"Hello from App V1"** and ~2 return **"Hello from App V2"** — the weighted split, served through the Gateway's **own** load balancer (separate from ingress-nginx).
+
 > If Gateway API CRDs are not installed, skip this step.
 
 ---

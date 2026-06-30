@@ -274,6 +274,30 @@ if kubectl get crd gatewayclasses.gateway.networking.k8s.io &>/dev/null; then
     -o jsonpath='{.spec.rules[0].backendRefs[1].weight}' 2>/dev/null)
   assert_eq "HTTPRoute v2 weight is 20" "20" "$W_V2"
 
+  # Access the Gateway through its OWN load balancer (Envoy Gateway provisions
+  # a separate LB per Gateway — not ingress-nginx). The LB takes 1-2 min, so
+  # gate on reachability and skip if it isn't up within the window.
+  kubectl wait --for=condition=Programmed gateway/lab-gateway -n "$NS" --timeout=120s &>/dev/null
+  GW_ADDR=$(kubectl get gateway lab-gateway -n "$NS" -o jsonpath='{.status.addresses[0].value}' 2>/dev/null)
+  GW_REACHABLE=false
+  if [ -n "$GW_ADDR" ]; then
+    for _i in $(seq 1 12); do
+      code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+        -H "Host: app-$STUDENT_NAME.lab.local" "http://$GW_ADDR/" 2>/dev/null)
+      [ "$code" = "200" ] && { GW_REACHABLE=true; break; }
+      sleep 5
+    done
+  fi
+  if [ "$GW_REACHABLE" = true ]; then
+    GW_BODY=$(curl -s --max-time 8 -H "Host: app-$STUDENT_NAME.lab.local" "http://$GW_ADDR/" 2>/dev/null)
+    assert_contains "Gateway routes to an app via its own LB" "$GW_BODY" "Hello from App"
+    GW_404=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://$GW_ADDR/" 2>/dev/null)
+    assert_eq "Gateway returns 404 without a matching Host" "404" "$GW_404"
+  else
+    skip "Gateway LB access (load balancer not reachable in window)"
+    skip "Gateway 404-without-host (load balancer not reachable in window)"
+  fi
+
   # Clean up: delete the Gateway first so Envoy Gateway releases the
   # gateway-exists finalizer on the GatewayClass, otherwise the GatewayClass
   # delete blocks indefinitely. Timeouts guard against a stuck finalizer.
